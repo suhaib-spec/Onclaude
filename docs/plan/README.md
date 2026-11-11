@@ -9,7 +9,8 @@ What we intend to build and in what order, derived from the research in [`../res
 | [GAME_PLAN.md](./GAME_PLAN.md) | Product concept, gated-AI design, challenges, scoring, training strategy, architecture, roadmap, open decisions. |
 
 ## Key decisions
-- The plan is a draft until the owner approves T-001. Approved decisions are recorded in `TASKS.md` and reflected here.
+- Plan approved 2026-11-11 (T-001). Decided: Angular + NestJS + PostgreSQL monorepo; Python + TypeScript challenges;
+  Strict/Standard/Debrief gate tiers first. Open decisions are listed in GAME_PLAN §10.
 
 ## Related tasks
 - T-001

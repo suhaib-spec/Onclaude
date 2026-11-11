@@ -1,8 +1,8 @@
 # Game Plan — AI-Assisted Coding Interview Trainer
 
-> **Status:** DRAFT, awaiting owner approval (task T-001).
+> **Status:** APPROVED by the owner on 2026-11-11 (task T-001).
 > **Basis:** four research reports in [`docs/research/`](../research/README.md), about 26k words and ~200 sources.
-> Sections marked ⚠️ need an owner decision (§10).
+> Sections marked ⚠️ had owner decisions; see §10 for what is decided and what is still open.
 
 ---
 
@@ -163,23 +163,25 @@ last hint, the cooldown is over, and budget remains. Help fades after a mileston
 | **4. Content & training** | 5 → 15 challenges, modes, 3-phase mock, recommender | T-014 → T-016 |
 | **5. Ship** | Deploy, auth hardening, cost guardrails | T-017 |
 
-## 10. Decisions needed from the owner
+## 10. Owner decisions
 
-Answers go into the task log. Recommended defaults are in **bold**.
+**Decided (2026-11-11):**
+- Stack: **Angular + NestJS + PostgreSQL**, one TypeScript monorepo.
+- Challenge languages at launch: **Python + TypeScript**.
+- Gate tiers first: **Strict (max L3) + Standard (max L4) + Debrief (L5)**; Coaching later.
+
+**Still open.** Each is asked in the task that needs it; recommended defaults are in **bold**:
 
 1. **Audience:** personal training tool / **public product (free first)** / B2B for companies?
-2. **Stack:** **Angular + NestJS + PostgreSQL in one TypeScript monorepo**, or something else?
-3. **Challenge languages at launch:** Python only / TypeScript only / **both**?
-4. **LLM provider and key:** **Anthropic (tutor + cheap judge)**; will you provide an API key?
-5. **Sandbox:** **local Docker for development now; choose E2B vs Vercel Sandbox when we deploy**?
-6. **Gate defaults:** ship **Standard + Strict + Debrief** tiers first? Is **L4 (naming the file/function)** acceptable?
-7. **Judge UX:** **buffer each reply until it's checked (+1–4 s)** or stream with mid-reply cut-off?
-8. **Terminal:** **"Run tests" button + output only for the MVP**, or a full terminal?
-9. **Verification training:** should the codebase include deliberately flawed "AI-written" code, and/or should the
+2. **LLM provider and key:** **Anthropic (tutor + cheap judge)**; will you provide an API key?
+3. **Sandbox:** **local Docker for development now; choose E2B vs Vercel Sandbox when we deploy**?
+4. **Judge UX:** **buffer each reply until it's checked (+1–4 s)** or stream with mid-reply cut-off?
+5. **Terminal:** **"Run tests" button + output only for the MVP**, or a full terminal?
+6. **Verification training:** should the codebase include deliberately flawed "AI-written" code, and/or should the
    assistant occasionally make checkable mistakes so candidates practise catching them? (**Later, as an opt-in mode**)
-10. **Hint penalties:** **visible in the score**, or only shown in the debrief?
-11. **Session defaults:** **60 min for full mocks, 15–45 min per single challenge**?
+7. **Hint penalties:** **visible in the score**, or only shown in the debrief?
+8. **Session defaults:** **60 min for full mocks, 15–45 min per single challenge**?
 
-## 11. Proposed tasks
+## 11. Task list
 
-Full entries are in [`TASKS.md`](../../TASKS.md) with status `Proposed`. Each needs approval before work starts.
+Full entries are in [`TASKS.md`](../../TASKS.md). All approved as the roadmap on 2026-11-11.
