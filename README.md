@@ -15,6 +15,7 @@ follow the links down to any feature.
 | [AGENTS.md](./AGENTS.md) | Foundational rules for every AI agent and contributor. |
 | [CLAUDE.md](./CLAUDE.md) | Pointer to `AGENTS.md` for Claude-based tools. |
 | [TASKS.md](./TASKS.md) | Task tracker and log — every change, requested and done. |
+| [docs/](./docs/README.md) | Research reports and the game plan. |
 
 _Feature folders will be listed here as tasks create them._
 
@@ -24,3 +25,4 @@ _Feature folders will be listed here as tasks create them._
 
 ## Related tasks
 - T-000 — Foundational rules, task log, and documentation structure
+- T-001 — Research & game plan
