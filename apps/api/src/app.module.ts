@@ -14,6 +14,7 @@ import { InterviewsController } from './interviews/interviews.controller';
 import { InterviewsService } from './interviews/interviews.service';
 import { SessionsController } from './sessions/sessions.controller';
 import { SessionsService } from './sessions/sessions.service';
+import { TtsController } from './tts/tts.controller';
 
 @Module({
   imports: [
@@ -30,7 +31,7 @@ import { SessionsService } from './sessions/sessions.service';
     TypeOrmModule.forFeature(ENTITIES),
     AiModule,
   ],
-  controllers: [HealthController, AssessmentsController, SessionsController, CandidateController, DemoController, InterviewsController],
+  controllers: [HealthController, AssessmentsController, SessionsController, CandidateController, DemoController, TtsController, InterviewsController],
   providers: [AssessmentsService, SessionsService, CandidateService, InterviewsService, SeederService],
 })
 export class AppModule {}

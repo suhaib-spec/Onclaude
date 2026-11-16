@@ -34,12 +34,24 @@ and what was done. Rules for using it are in [AGENTS.md](./AGENTS.md) §3–4.
 | T-019 | Run locally without PostgreSQL: built-in database fallback | MVP | Done | 2026-11-16 | 2026-11-16 |
 | T-020 | PowerPoint deck, Word presenter script, and UI polish | MVP | Done | 2026-11-16 | 2026-11-16 |
 | T-021 | Live AI Interview: JD-grounded interviewer, live rubric scores and one-line CTA | MVP | Done | 2026-11-16 | 2026-11-16 |
+| T-022 | Human-like voice via Retell AI | — | Proposed | 2026-11-16 | — |
 
 ---
 
 ## Active tasks
 
-_None._
+### T-022 — Human-like voice via Retell AI
+- **Status:** Proposed (owner will provide the Retell API key and settings)
+- **Requested:** 2026-11-16 by Suhaib: "Set up Retell AI's thing. I'll give you the API key and all the other stuff required",
+  after asking for very human-like text-to-speech for Ava.
+- **Conflict check:** Extends T-021 (voice). Note: a free neural-voice endpoint (`/api/tts`, msedge-tts) was added in T-021
+  as a fallback-first option, but the Microsoft service reset connections on the owner's network, so the app falls back to
+  browser voices.
+- **Open questions for the owner:** Retell API key (to go in `.env`, never committed); create the Retell agent for you or
+  use an existing agent ID; voice choice; whether Retell's own LLM runs the interview (prompted with our JD questions,
+  scoring after/along the transcript) or our backend runs it as a custom LLM (needs a public URL/tunnel, since Retell
+  must reach our server).
+
 
 ---
 

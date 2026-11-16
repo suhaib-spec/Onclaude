@@ -40,10 +40,11 @@
             </span>
           </div>
           <span class="spacer"></span>
-          @if (ttsSupported && voices().length) {
+          @if (ttsSupported) {
             <select class="voice-sel" [value]="voiceName()" (change)="setVoice($any($event.target).value)" title="Ava's voice">
+              @for (n of neuralVoices; track n.id) { <option [value]="n.id">★ {{ n.label }}</option> }
               @for (v of voices(); track v.name) {
-                <option [value]="v.name">{{ v.natural ? '★ ' : '' }}{{ shortVoice(v.name) }}</option>
+                <option [value]="v.name">{{ shortVoice(v.name) }} (browser)</option>
               }
             </select>
           }

@@ -56,9 +56,51 @@ export class LiveStage implements OnInit, OnDestroy {
   private rec: any = null;
   private voice: SpeechSynthesisVoice | null = null;
   voices = signal<{ name: string; natural: boolean }[]>([]);
+  readonly neuralVoices = [
+    { id: 'neural:en-US-AvaMultilingualNeural', label: 'Ava (human, neural)' },
+    { id: 'neural:en-US-JennyNeural', label: 'Jenny (human, neural)' },
+    { id: 'neural:en-US-AndrewMultilingualNeural', label: 'Andrew (human, neural)' },
+    { id: 'neural:en-GB-SoniaNeural', label: 'Sonia, UK (human, neural)' },
+  ];
+  private audio: HTMLAudioElement | null = null;
+  private neuralFailed = false;
+  private get neuralId(): string | null {
+    const n = this.voiceName();
+    return n.startsWith('neural:') && !this.neuralFailed ? n.slice(7) : null;
+  }
+  /** Fetch and start Ava's neural (human-sounding) voice. Returns null if unavailable or blocked. */
+  private async playNeural(text: string): Promise<HTMLAudioElement | null> {
+    const id = this.neuralId;
+    if (!id) return null;
+    try {
+      const r = await fetch(`/api/tts?voice=${encodeURIComponent(id)}&text=${encodeURIComponent(text)}`);
+      if (!r.ok) { this.neuralFailed = r.status === 503 ? true : this.neuralFailed; return null; }
+      const url = URL.createObjectURL(await r.blob());
+      this.audio?.pause();
+      const a = new Audio(url);
+      this.audio = a;
+      await a.play();
+      return a;
+    } catch {
+      return null;
+    }
+  }
+  private stopAudio() {
+    this.audio?.pause();
+    this.audio = null;
+    if (this.ttsSupported) speechSynthesis.cancel();
+  }
   voiceName = signal('');
   hasNatural = computed(() => this.voices().some((v) => v.natural && /Natural/i.test(v.name)));
   setVoice(name: string) {
+    if (name.startsWith('neural:')) {
+      this.neuralFailed = false;
+      this.voiceName.set(name);
+      try { localStorage.setItem('hw.voice', name); } catch { /* storage unavailable */ }
+      this.stopAudio();
+      void this.playNeural("Hi, I'm Ava. Let's get started.");
+      return;
+    }
     const v = speechSynthesis.getVoices().find((x) => x.name === name);
     if (!v) return;
     this.voice = v;
@@ -165,7 +207,7 @@ export class LiveStage implements OnInit, OnDestroy {
         let saved: string | null = null;
         try { saved = localStorage.getItem('hw.voice'); } catch { /* storage unavailable */ }
         this.voice = sorted.find((v) => v.name === saved) ?? sorted[0] ?? null;
-        this.voiceName.set(this.voice?.name ?? '');
+        this.voiceName.set(saved && (saved.startsWith('neural:') || sorted.some((v) => v.name === saved)) ? saved : 'neural:en-US-AvaMultilingualNeural');
       };
       pick();
       speechSynthesis.onvoiceschanged = pick;
@@ -193,7 +235,7 @@ export class LiveStage implements OnInit, OnDestroy {
     if (this.streamTimer) clearInterval(this.streamTimer);
     this.micWanted = false;
     this.rec?.stop?.();
-    if (this.ttsSupported) speechSynthesis.cancel();
+    this.stopAudio();
   }
 
   setView(v: View) {
@@ -209,7 +251,7 @@ export class LiveStage implements OnInit, OnDestroy {
     this.pending.set(text);
     this.answer = '';
     this.autoGrow();
-    if (this.ttsSupported) speechSynthesis.cancel();
+    this.stopAudio();
     this.scrollSoon();
     const before = s.transcript.length;
     try {
@@ -309,46 +351,69 @@ export class LiveStage implements OnInit, OnDestroy {
       }, msPerWord);
     };
 
+    const browserVoice = () => {
+      const u = new SpeechSynthesisUtterance(full);
+      if (this.voice) u.voice = this.voice;
+      u.rate = 1;
+      u.pitch = 1;
+      let t0 = 0;
+      let sawBoundary = false;
+      u.onstart = () => {
+        voiceStarted = true;
+        if (fallback) clearTimeout(fallback);
+        this.speaking.set(true);
+        t0 = performance.now();
+        // Reveal by elapsed time at the voice's learned pace, slightly ahead so the text never trails the voice.
+        if (this.streamTimer) clearInterval(this.streamTimer);
+        this.streamTimer = setInterval(() => {
+          const chars = ((performance.now() - t0) / this.msPerChar) * 1.12 + 6;
+          const cut = full.indexOf(' ', Math.floor(chars));
+          show(cut === -1 ? full.length : cut);
+        }, 50);
+        backstop = setTimeout(finish, full.length * 120 + 4000); // some voices never fire 'end'
+      };
+      u.onboundary = (e: SpeechSynthesisEvent) => {
+        sawBoundary = true;
+        const len = e.charLength || (full.slice(e.charIndex).match(/^\S+/)?.[0].length ?? 0);
+        show(e.charIndex + len);
+      };
+      u.onend = () => {
+        if (t0 && full.length > 40) {
+          const measured = (performance.now() - t0) / full.length;
+          if (measured > 25 && measured < 140) this.msPerChar = this.msPerChar * 0.4 + measured * 0.6; // learn the real pace
+        }
+        void sawBoundary;
+        finish();
+      };
+      u.onerror = () => (voiceStarted ? finish() : type(60, true));
+      speechSynthesis.speak(u);
+      // Autoplay blocked (no click on the page yet): show the text anyway; the voice starts after the first click.
+      fallback = setTimeout(() => { if (!voiceStarted) { speechSynthesis.cancel(); type(60, true); } }, 1500);
+      };
+
     if (!this.readAloud() || !this.ttsSupported) return type(60, true);
 
     this.spokeOnce = true;
-    const u = new SpeechSynthesisUtterance(full);
-    if (this.voice) u.voice = this.voice;
-    u.rate = 1;
-    u.pitch = 1;
-    let t0 = 0;
-    let sawBoundary = false;
-    u.onstart = () => {
-      voiceStarted = true;
-      if (fallback) clearTimeout(fallback);
-      this.speaking.set(true);
-      t0 = performance.now();
-      // Reveal by elapsed time at the voice's learned pace, slightly ahead so the text never trails the voice.
-      if (this.streamTimer) clearInterval(this.streamTimer);
-      this.streamTimer = setInterval(() => {
-        const chars = ((performance.now() - t0) / this.msPerChar) * 1.12 + 6;
-        const cut = full.indexOf(' ', Math.floor(chars));
-        show(cut === -1 ? full.length : cut);
-      }, 50);
-      backstop = setTimeout(finish, full.length * 120 + 4000); // some voices never fire 'end'
-    };
-    u.onboundary = (e: SpeechSynthesisEvent) => {
-      sawBoundary = true;
-      const len = e.charLength || (full.slice(e.charIndex).match(/^\S+/)?.[0].length ?? 0);
-      show(e.charIndex + len);
-    };
-    u.onend = () => {
-      if (t0 && full.length > 40) {
-        const measured = (performance.now() - t0) / full.length;
-        if (measured > 25 && measured < 140) this.msPerChar = this.msPerChar * 0.4 + measured * 0.6; // learn the real pace
-      }
-      void sawBoundary;
-      finish();
-    };
-    u.onerror = () => (voiceStarted ? finish() : type(60, true));
-    speechSynthesis.speak(u);
-    // Autoplay blocked (no click on the page yet): show the text anyway; the voice starts after the first click.
-    fallback = setTimeout(() => { if (!voiceStarted) { speechSynthesis.cancel(); type(60, true); } }, 1500);
+    if (this.neuralId) {
+      void this.playNeural(full).then((a) => {
+        if (finished) { a?.pause(); return; }
+        if (!a) return browserVoice();
+        this.speaking.set(true);
+        if (this.streamTimer) clearInterval(this.streamTimer);
+        // Text follows the actual audio position, so it can never drift from the voice.
+        this.streamTimer = setInterval(() => {
+          if (!a.duration || !isFinite(a.duration)) return;
+          const chars = (a.currentTime / a.duration) * full.length * 1.06 + 4;
+          const cut = full.indexOf(' ', Math.floor(chars));
+          show(cut === -1 ? full.length : cut);
+        }, 50);
+        a.onended = () => finish();
+        a.onerror = () => finish();
+        backstop = setTimeout(finish, full.length * 120 + 6000);
+      });
+      return;
+    }
+    browserVoice();
   }
 
   shown(t: Turn) {
@@ -358,6 +423,12 @@ export class LiveStage implements OnInit, OnDestroy {
   private say(text: string) {
     if (!this.readAloud() || !this.ttsSupported) return;
     this.spokeOnce = true;
+    if (this.neuralId) {
+      void this.playNeural(text).then((a) => {
+        if (a) { this.speaking.set(true); a.onended = () => this.speaking.set(false); }
+      });
+      return;
+    }
     const u = new SpeechSynthesisUtterance(text);
     if (this.voice) u.voice = this.voice;
     u.rate = 1;
@@ -370,7 +441,7 @@ export class LiveStage implements OnInit, OnDestroy {
   toggleRead() {
     this.readAloud.update((v) => !v);
     if (!this.readAloud() && this.ttsSupported) {
-      speechSynthesis.cancel();
+      this.stopAudio();
       this.speaking.set(false);
     } else if (this.prompt()) this.say(this.prompt()!.text);
   }
@@ -383,7 +454,7 @@ export class LiveStage implements OnInit, OnDestroy {
       this.micError.set('Voice input needs Chrome or Edge. You can still type your answer.');
       return;
     }
-    if (this.ttsSupported) speechSynthesis.cancel(); // don't transcribe Ava's own voice
+    this.stopAudio(); // don't transcribe Ava's own voice
     this.micWanted = true;
     this.micBase = this.answer ? this.answer.trimEnd() + ' ' : '';
     // `committed` = everything heard in earlier listening sessions (the browser restarts after pauses);
