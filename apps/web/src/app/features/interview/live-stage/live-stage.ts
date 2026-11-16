@@ -55,6 +55,23 @@ export class LiveStage implements OnInit, OnDestroy {
   recClass = REC_CLASS;
   private rec: any = null;
   private voice: SpeechSynthesisVoice | null = null;
+  voices = signal<{ name: string; natural: boolean }[]>([]);
+  voiceName = signal('');
+  hasNatural = computed(() => this.voices().some((v) => v.natural && /Natural/i.test(v.name)));
+  setVoice(name: string) {
+    const v = speechSynthesis.getVoices().find((x) => x.name === name);
+    if (!v) return;
+    this.voice = v;
+    this.voiceName.set(name);
+    try { localStorage.setItem('hw.voice', name); } catch { /* storage unavailable */ }
+    speechSynthesis.cancel();
+    const sample = new SpeechSynthesisUtterance("Hi, I'm Ava. Let's get started.");
+    sample.voice = v;
+    speechSynthesis.speak(sample);
+  }
+  shortVoice(n: string) {
+    return n.replace(/^Microsoft\s+/, '').replace(/\s*-\s*English.*$/, '').replace(/Online\s*/, '');
+  }
   private spokeOnce = false;
   private micWanted = false;
   private micBase = '';
@@ -132,8 +149,23 @@ export class LiveStage implements OnInit, OnDestroy {
     if (this.ttsSupported) {
       const pick = () => {
         const vs = speechSynthesis.getVoices().filter((v) => v.lang?.toLowerCase().startsWith('en'));
-        const prefer = ['Natural', 'Aria', 'Jenny', 'Google US English', 'Samantha', 'Zira', 'Google UK English Female'];
-        this.voice = prefer.map((n) => vs.find((v) => v.name.includes(n))).find(Boolean) ?? vs[0] ?? null;
+        // Natural (neural) voices first: Edge ships Microsoft "Online (Natural)" voices; Chrome has Google voices.
+        const rank = (v: SpeechSynthesisVoice) => {
+          const n = v.name;
+          if (/Ava.*Natural/i.test(n)) return 0;
+          if (/(Jenny|Emma|Aria|Michelle).*Natural/i.test(n)) return 1;
+          if (/Natural/i.test(n)) return 2;
+          if (/Google US English/i.test(n)) return 3;
+          if (/Google UK English Female|Samantha|Karen|Moira/i.test(n)) return 4;
+          if (/Google/i.test(n)) return 5;
+          return 9;
+        };
+        const sorted = [...vs].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+        this.voices.set(sorted.map((v) => ({ name: v.name, natural: rank(v) <= 3 })));
+        let saved: string | null = null;
+        try { saved = localStorage.getItem('hw.voice'); } catch { /* storage unavailable */ }
+        this.voice = sorted.find((v) => v.name === saved) ?? sorted[0] ?? null;
+        this.voiceName.set(this.voice?.name ?? '');
       };
       pick();
       speechSynthesis.onvoiceschanged = pick;
@@ -282,8 +314,8 @@ export class LiveStage implements OnInit, OnDestroy {
     this.spokeOnce = true;
     const u = new SpeechSynthesisUtterance(full);
     if (this.voice) u.voice = this.voice;
-    u.rate = 1.02;
-    u.pitch = 1.05;
+    u.rate = 1;
+    u.pitch = 1;
     let t0 = 0;
     let sawBoundary = false;
     u.onstart = () => {
@@ -328,8 +360,8 @@ export class LiveStage implements OnInit, OnDestroy {
     this.spokeOnce = true;
     const u = new SpeechSynthesisUtterance(text);
     if (this.voice) u.voice = this.voice;
-    u.rate = 1.02;
-    u.pitch = 1.05;
+    u.rate = 1;
+    u.pitch = 1;
     u.onstart = () => this.speaking.set(true);
     u.onend = () => this.speaking.set(false);
     speechSynthesis.speak(u);

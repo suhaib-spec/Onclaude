@@ -40,6 +40,13 @@
             </span>
           </div>
           <span class="spacer"></span>
+          @if (ttsSupported && voices().length) {
+            <select class="voice-sel" [value]="voiceName()" (change)="setVoice($any($event.target).value)" title="Ava's voice">
+              @for (v of voices(); track v.name) {
+                <option [value]="v.name">{{ v.natural ? '★ ' : '' }}{{ shortVoice(v.name) }}</option>
+              }
+            </select>
+          }
           @if (ttsSupported) {
             <button class="btn sm ghost light" [class.on]="readAloud()" (click)="toggleRead()" title="Read questions aloud">
               🔊 {{ readAloud() ? 'Voice on' : 'Voice off' }}
