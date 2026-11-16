@@ -386,26 +386,40 @@ export class LiveStage implements OnInit, OnDestroy {
     if (this.ttsSupported) speechSynthesis.cancel(); // don't transcribe Ava's own voice
     this.micWanted = true;
     this.micBase = this.answer ? this.answer.trimEnd() + ' ' : '';
-    this.micFinal = '';
+    // `committed` = everything heard in earlier listening sessions (the browser restarts after pauses);
+    // `session` = everything heard in the current session, rebuilt from scratch on every event, so nothing is lost or duplicated.
+    let committed = '';
+    let sessionFinal = '';
+    let sessionInterim = '';
     this.micFinalText.set('');
     this.micInterim.set('');
+    const render = () => {
+      const finalText = (committed + ' ' + sessionFinal).replace(/\s+/g, ' ').trim();
+      this.micFinalText.set(finalText);
+      this.micInterim.set(sessionInterim.trim());
+      this.answer = (this.micBase + finalText + ' ' + sessionInterim).replace(/\s+/g, ' ').trimStart();
+      this.cdr.markForCheck(); // zoneless app: speech events don't trigger a re-render on their own
+      this.autoGrow();
+    };
     const start = () => {
       const rec = new Ctor();
       rec.lang = 'en-US';
       rec.continuous = true;
       rec.interimResults = true;
+      rec.maxAlternatives = 1;
+      sessionFinal = '';
+      sessionInterim = '';
       rec.onresult = (e: any) => {
-        let interim = '';
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          const r = e.results[i];
-          if (r.isFinal) this.micFinal += r[0].transcript.trim() + ' ';
-          else interim += r[0].transcript;
+        let fin = '';
+        let int = '';
+        for (let i = 0; i < e.results.length; i++) {
+          const txt = e.results[i][0].transcript;
+          if (e.results[i].isFinal) fin += ' ' + txt;
+          else int += ' ' + txt;
         }
-        this.micFinalText.set(this.micFinal.trim());
-        this.micInterim.set(interim.trim());
-        this.answer = (this.micBase + this.micFinal + interim).replace(/\s+/g, ' ').trimStart();
-        this.cdr.markForCheck(); // zoneless app: speech events don't trigger a re-render on their own
-        this.autoGrow();
+        sessionFinal = fin;
+        sessionInterim = int;
+        render();
       };
       rec.onerror = (e: any) => {
         if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') {
@@ -416,13 +430,19 @@ export class LiveStage implements OnInit, OnDestroy {
           this.micError.set('No microphone found.');
         } else if (e?.error === 'network') {
           this.micWanted = false;
-          this.listening.set(false);
-          this.micError.set('Voice typing is not available in this browser. Open the app in Google Chrome, or type your answer.');
+          this.micError.set('Voice typing is not available in this browser. Open the app in Edge or Chrome, or type your answer.');
         }
         this.cdr.markForCheck();
       };
-      // Chrome stops after a pause: keep listening until the user presses stop.
-      rec.onend = () => (this.micWanted ? setTimeout(() => this.micWanted && start(), 120) : this.listening.set(false));
+      rec.onend = () => {
+        // Keep everything heard so far (including words still "in progress"), then keep listening.
+        committed = (committed + ' ' + sessionFinal + ' ' + sessionInterim).replace(/\s+/g, ' ').trim();
+        sessionFinal = '';
+        sessionInterim = '';
+        render();
+        if (this.micWanted) setTimeout(() => this.micWanted && start(), 100);
+        else { this.listening.set(false); this.micInterim.set(''); this.cdr.markForCheck(); }
+      };
       this.rec = rec;
       try { rec.start(); } catch { /* already started */ }
     };
