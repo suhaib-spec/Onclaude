@@ -89,12 +89,18 @@
           <div class="composer" [class.rec]="listening()" [class.busy]="sending()">
             @if (listening()) {
               <div class="rec-bar"><span class="wave"><i></i><i></i><i></i><i></i><i></i></span> Listening… speak your answer <span class="spacer"></span><span class="hint">Tap ■ to stop</span></div>
+              <div class="voice-preview">
+                @if (micFinalText() || micInterim()) {
+                  <span class="final">{{ micFinalText() }}</span> <span class="interim">{{ micInterim() }}</span>
+                } @else { <span class="interim">Start talking, and your words will appear here…</span> }
+              </div>
             }
             <textarea
               #ta
               class="ans"
               rows="1"
-              [(ngModel)]="answer"
+              [value]="answerSig()"
+              (input)="answerSig.set($any($event.target).value)"
               (keydown)="onKey($event)"
               (input)="autoGrow()"
               [disabled]="sending()"

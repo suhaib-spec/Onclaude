@@ -121,3 +121,7 @@
 }
 
 .caret.big { width: 10px; height: 26px; vertical-align: -4px; }
+.voice-preview { margin: 0 0 8px; padding: 10px 12px; border-radius: 14px; background: rgba(244,63,94,.10); border: 1px dashed rgba(251,113,133,.45);
+  font-size: 16px; line-height: 1.5; min-height: 44px; }
+.voice-preview .final { color: #fff; }
+.voice-preview .interim { color: #fda4af; font-style: italic; background: rgba(251,113,133,.16); border-radius: 4px; padding: 0 3px; }

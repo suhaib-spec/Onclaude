@@ -30,7 +30,14 @@ export class LiveStage implements OnInit, OnDestroy {
   s = signal<InterviewSession | null>(null);
   error = signal('');
   view = signal<View>('both');
-  answer = '';
+  answerSig = signal('');
+  get answer() { return this.answerSig(); }
+  set answer(v: string) { this.answerSig.set(v); }
+  /** Live voice preview: words already recognised + words still being recognised. */
+  micFinalText = signal('');
+  micInterim = signal('');
+  /** Learned speaking pace of the chosen voice (ms per character), refined after every sentence. */
+  private msPerChar = 62;
   sending = signal(false);
   pending = signal('');
   /** How many transcript turns are revealed (new interviewer turns appear one by one). */
@@ -277,19 +284,35 @@ export class LiveStage implements OnInit, OnDestroy {
     if (this.voice) u.voice = this.voice;
     u.rate = 1.02;
     u.pitch = 1.05;
+    let t0 = 0;
+    let sawBoundary = false;
     u.onstart = () => {
       voiceStarted = true;
       if (fallback) clearTimeout(fallback);
       this.speaking.set(true);
-      type(330, false); // ~ speaking pace; word-boundary events (when the voice sends them) keep it exact
-      const wordsCount = full.split(/\s+/).length;
-      backstop = setTimeout(finish, wordsCount * 450 + 4000); // some voices never fire 'end'
+      t0 = performance.now();
+      // Reveal by elapsed time at the voice's learned pace, slightly ahead so the text never trails the voice.
+      if (this.streamTimer) clearInterval(this.streamTimer);
+      this.streamTimer = setInterval(() => {
+        const chars = ((performance.now() - t0) / this.msPerChar) * 1.12 + 6;
+        const cut = full.indexOf(' ', Math.floor(chars));
+        show(cut === -1 ? full.length : cut);
+      }, 50);
+      backstop = setTimeout(finish, full.length * 120 + 4000); // some voices never fire 'end'
     };
     u.onboundary = (e: SpeechSynthesisEvent) => {
+      sawBoundary = true;
       const len = e.charLength || (full.slice(e.charIndex).match(/^\S+/)?.[0].length ?? 0);
       show(e.charIndex + len);
     };
-    u.onend = () => finish();
+    u.onend = () => {
+      if (t0 && full.length > 40) {
+        const measured = (performance.now() - t0) / full.length;
+        if (measured > 25 && measured < 140) this.msPerChar = this.msPerChar * 0.4 + measured * 0.6; // learn the real pace
+      }
+      void sawBoundary;
+      finish();
+    };
     u.onerror = () => (voiceStarted ? finish() : type(60, true));
     speechSynthesis.speak(u);
     // Autoplay blocked (no click on the page yet): show the text anyway; the voice starts after the first click.
@@ -332,6 +355,8 @@ export class LiveStage implements OnInit, OnDestroy {
     this.micWanted = true;
     this.micBase = this.answer ? this.answer.trimEnd() + ' ' : '';
     this.micFinal = '';
+    this.micFinalText.set('');
+    this.micInterim.set('');
     const start = () => {
       const rec = new Ctor();
       rec.lang = 'en-US';
@@ -344,6 +369,8 @@ export class LiveStage implements OnInit, OnDestroy {
           if (r.isFinal) this.micFinal += r[0].transcript.trim() + ' ';
           else interim += r[0].transcript;
         }
+        this.micFinalText.set(this.micFinal.trim());
+        this.micInterim.set(interim.trim());
         this.answer = (this.micBase + this.micFinal + interim).replace(/\s+/g, ' ').trimStart();
         this.cdr.markForCheck(); // zoneless app: speech events don't trigger a re-render on their own
         this.autoGrow();
@@ -371,6 +398,7 @@ export class LiveStage implements OnInit, OnDestroy {
     this.listening.set(true);
   }
   private stopMic() {
+    this.micInterim.set('');
     this.micWanted = false;
     this.rec?.stop?.();
     this.listening.set(false);
