@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { InterviewSession, LiveScore, Recommendation, Turn } from '../../../core/api.models';
@@ -24,6 +24,7 @@ export const REC_CLASS: Record<Recommendation, string> = { 'Strong hire': 'good'
 export class LiveStage implements OnInit, OnDestroy {
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
+  private cdr = inject(ChangeDetectorRef);
   private convo = viewChild<ElementRef<HTMLElement>>('convo');
 
   s = signal<InterviewSession | null>(null);
@@ -57,6 +58,12 @@ export class LiveStage implements OnInit, OnDestroy {
 
   turns = computed(() => (this.s()?.transcript ?? []).slice(0, this.shownCount()));
   /** The newest interviewer line that asks something (or the closing line). */
+  /** Text for the big question header: follows Ava's voice while she is speaking it. */
+  promptText = computed(() => {
+    const p = this.prompt();
+    if (!p) return '';
+    return p.id === this.streamId() ? this.streamText() : p.text;
+  });
   prompt = computed<Turn | undefined>(() => {
     const t = this.turns();
     for (let i = t.length - 1; i >= 0; i--) {
@@ -202,7 +209,7 @@ export class LiveStage implements OnInit, OnDestroy {
     }
   }
 
-  /** Show turns from `from` onward one at a time; interviewer lines stream in word by word, like a live reply. */
+  /** Show turns from `from` onward one at a time; Ava's lines appear in step with her voice (or typed, if voice is off). */
   private revealFrom(from: number) {
     if (this.revealTimer) clearTimeout(this.revealTimer);
     if (this.streamTimer) clearInterval(this.streamTimer);
@@ -214,25 +221,79 @@ export class LiveStage implements OnInit, OnDestroy {
       this.shownCount.set(i);
       this.scrollSoon();
       if (t.role !== 'interviewer') { this.revealTimer = setTimeout(step, 250); return; }
-      this.say(t.text);
-      const words = t.text.split(/(\s+)/);
+      this.streamTurn(t, step);
+    };
+    step();
+  }
+
+  private streamTurn(t: Turn, next: () => void) {
+    const full = t.text;
+    const words = full.split(/(\s+)/); // words and the spaces between them
+    let shown = 0; // characters visible
+    let finished = false;
+    let voiceStarted = false;
+    let fallback: ReturnType<typeof setTimeout> | null = null;
+    let backstop: ReturnType<typeof setTimeout> | null = null;
+    this.streamId.set(t.id);
+    this.streamText.set('');
+
+    const show = (chars: number) => {
+      if (chars <= shown) return;
+      shown = Math.min(full.length, chars);
+      this.streamText.set(full.slice(0, shown));
+      this.scrollSoon();
+    };
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      if (this.streamTimer) { clearInterval(this.streamTimer); this.streamTimer = null; }
+      if (fallback) clearTimeout(fallback);
+      if (backstop) clearTimeout(backstop);
+      this.speaking.set(false);
+      this.streamText.set(full);
+      this.streamId.set(null);
+      this.scrollSoon();
+      this.revealTimer = setTimeout(next, 350);
+    };
+    /** Reveal word by word; msPerWord ≈ speaking pace when the voice is on. */
+    const type = (msPerWord: number, endWhenDone: boolean) => {
+      if (this.streamTimer) clearInterval(this.streamTimer);
       let w = 0;
-      this.streamId.set(t.id);
-      this.streamText.set('');
       this.streamTimer = setInterval(() => {
         w = Math.min(words.length, w + 2);
-        this.streamText.set(words.slice(0, w).join(''));
-        if (w % 8 === 0) this.scrollSoon();
+        show(words.slice(0, w).join('').length);
         if (w >= words.length) {
           clearInterval(this.streamTimer!);
           this.streamTimer = null;
-          this.streamId.set(null);
-          this.scrollSoon();
-          this.revealTimer = setTimeout(step, 450);
+          if (endWhenDone) finish();
         }
-      }, 55);
+      }, msPerWord);
     };
-    step();
+
+    if (!this.readAloud() || !this.ttsSupported) return type(60, true);
+
+    this.spokeOnce = true;
+    const u = new SpeechSynthesisUtterance(full);
+    if (this.voice) u.voice = this.voice;
+    u.rate = 1.02;
+    u.pitch = 1.05;
+    u.onstart = () => {
+      voiceStarted = true;
+      if (fallback) clearTimeout(fallback);
+      this.speaking.set(true);
+      type(330, false); // ~ speaking pace; word-boundary events (when the voice sends them) keep it exact
+      const wordsCount = full.split(/\s+/).length;
+      backstop = setTimeout(finish, wordsCount * 450 + 4000); // some voices never fire 'end'
+    };
+    u.onboundary = (e: SpeechSynthesisEvent) => {
+      const len = e.charLength || (full.slice(e.charIndex).match(/^\S+/)?.[0].length ?? 0);
+      show(e.charIndex + len);
+    };
+    u.onend = () => finish();
+    u.onerror = () => (voiceStarted ? finish() : type(60, true));
+    speechSynthesis.speak(u);
+    // Autoplay blocked (no click on the page yet): show the text anyway; the voice starts after the first click.
+    fallback = setTimeout(() => { if (!voiceStarted) { speechSynthesis.cancel(); type(60, true); } }, 1500);
   }
 
   shown(t: Turn) {
@@ -284,6 +345,7 @@ export class LiveStage implements OnInit, OnDestroy {
           else interim += r[0].transcript;
         }
         this.answer = (this.micBase + this.micFinal + interim).replace(/\s+/g, ' ').trimStart();
+        this.cdr.markForCheck(); // zoneless app: speech events don't trigger a re-render on their own
         this.autoGrow();
       };
       rec.onerror = (e: any) => {
@@ -293,7 +355,12 @@ export class LiveStage implements OnInit, OnDestroy {
         } else if (e?.error === 'audio-capture') {
           this.micWanted = false;
           this.micError.set('No microphone found.');
+        } else if (e?.error === 'network') {
+          this.micWanted = false;
+          this.listening.set(false);
+          this.micError.set('Voice typing is not available in this browser. Open the app in Google Chrome, or type your answer.');
         }
+        this.cdr.markForCheck();
       };
       // Chrome stops after a pause: keep listening until the user presses stop.
       rec.onend = () => (this.micWanted ? setTimeout(() => this.micWanted && start(), 120) : this.listening.set(false));

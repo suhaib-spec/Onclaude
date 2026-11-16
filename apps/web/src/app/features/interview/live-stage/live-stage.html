@@ -58,7 +58,7 @@
 
         <div class="prompt-q">
           @if (prompt(); as p) {
-            <hw-typewriter [text]="p.text" (typing)="typing.set($event)" />
+            {{ promptText() }}@if (p.id === streamId()) {<span class="caret big"></span>}
           }
         </div>
 
