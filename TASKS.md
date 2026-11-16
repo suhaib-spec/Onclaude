@@ -32,6 +32,7 @@ and what was done. Rules for using it are in [AGENTS.md](./AGENTS.md) §3–4.
 | T-017 | Deployment, cost guardrails & ops | 5 | Approved | — | — |
 | T-018 | MVP: interviewer-built assessments with a gated AI assistant + 2 demo use cases | MVP | Done | 2026-11-16 | 2026-11-16 |
 | T-019 | Run locally without PostgreSQL: built-in database fallback | MVP | Done | 2026-11-16 | 2026-11-16 |
+| T-020 | PowerPoint deck, Word presenter script, and UI polish | MVP | Done | 2026-11-16 | 2026-11-16 |
 
 ---
 
@@ -125,6 +126,20 @@ _None._
 ---
 
 ## Completed tasks
+
+### T-020 — PowerPoint deck, Word presenter script, and UI polish
+- **Status:** Done
+- **Requested:** 2026-11-16 by Suhaib ("make the ppt file and a script in docx for the ppt and keep it simple … and make
+  the UI much better"); clarified: improve **both** the app UI and the slides' design.
+- **Conflict check:** Builds on T-018 (UI, pitch content). No conflicts.
+- **Files changed:** `docs/pitch/` (new: deck, script, generator, README), `docs/README.md`, `apps/web/src/styles.scss`,
+  `apps/web/src/app/features/candidate/take/take.{html,scss}`, `apps/web/src/app/features/interviewer/review/review.scss`,
+  `apps/web/src/app/features/candidate/README.md`.
+- **Verification:** deck passes the pptx validator and was checked slide by slide as rendered images; script checked as PDF; web build passes;
+  UI checked with before/after screenshots and on the owner's PC.
+- **Summary:** Redesigned 11-slide deck in plain English; ~5½-minute presenter script; visual polish pass on the app
+  (one design system, "Held the line" shield on refused answers, guarded helper panel, cleaner review page). No
+  behaviour or API changes.
 
 ### T-019 — Run locally without PostgreSQL: built-in database fallback
 - **Status:** Done

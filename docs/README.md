@@ -11,6 +11,8 @@ Project documentation that isn't tied to one code folder: research, plans, and (
 | [mvp/](./mvp/README.md) | Hintwise MVP spec, demo script and pitch deck (T-018). |
 | [review/](./review/README.md) | Pre-pitch panel reviews and what we changed (T-018). |
 
+| [pitch/](./pitch/README.md) | The PowerPoint deck and presenter script (T-020). |
+
 ## Key decisions
 - Research is kept separate from the plan: research = evidence with sources; plan = what we decided to build.
 

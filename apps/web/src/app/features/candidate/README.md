@@ -20,3 +20,5 @@ The candidate journey: open an invite, read what the AI helper will and won't do
 
 ## Related tasks
 T-018
+
+- **Visual polish pass (pre-demo):** chat bubbles use the solid accent for the candidate and a neutral card for the helper; declined/redirected replies get a green "Held the line" shield chip and accent rail, hint replies an amber rail; composer is a single field with an inline send button.
