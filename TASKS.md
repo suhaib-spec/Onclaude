@@ -151,6 +151,11 @@ _None._
   one-line call to action. Split-screen stage view for the demo; voice in/out where the browser supports it. Lead fix
   after integration: a skill's score is the average of best and mean (a follow-up recovers some, not all), and evidence
   quotes come from the newest answer.
+- **Follow-up fixes (owner feedback, 2026-11-16 17:15):** Claude-style answer bar (focus glow, round mic and send
+  buttons, auto-growing input); the mic keeps listening through pauses and shows live text and a waveform, with clear
+  messages if the mic is blocked; Ava's voice on by default with a natural voice where available (spoken after the
+  first click if the browser blocks autoplay); interviewer replies stream in word by word; the stage no longer overflows
+  on wide screens.
 
 ### T-020 — PowerPoint deck, Word presenter script, and UI polish
 - **Status:** Done

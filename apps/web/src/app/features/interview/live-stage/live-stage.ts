@@ -36,12 +36,23 @@ export class LiveStage implements OnInit, OnDestroy {
   shownCount = signal(0);
   typing = signal(false);
   speaking = signal(false);
-  readAloud = signal(false);
+  readAloud = signal(true);
+  /** The interviewer turn currently being "typed" live, and how much of it is visible. */
+  streamId = signal<string | null>(null);
+  streamText = signal('');
+  micError = signal('');
   listening = signal(false);
   micSupported = typeof window !== 'undefined' && !!((window as any).webkitSpeechRecognition || (window as any).SpeechRecognition);
   ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
   recClass = REC_CLASS;
   private rec: any = null;
+  private voice: SpeechSynthesisVoice | null = null;
+  private spokeOnce = false;
+  private micWanted = false;
+  private micBase = '';
+  private micFinal = '';
+  private streamTimer: ReturnType<typeof setInterval> | null = null;
+  private ta = viewChild<ElementRef<HTMLTextAreaElement>>('ta');
   private revealTimer: ReturnType<typeof setTimeout> | null = null;
 
   turns = computed(() => (this.s()?.transcript ?? []).slice(0, this.shownCount()));
@@ -104,6 +115,21 @@ export class LiveStage implements OnInit, OnDestroy {
   });
 
   async ngOnInit() {
+    if (this.ttsSupported) {
+      const pick = () => {
+        const vs = speechSynthesis.getVoices().filter((v) => v.lang?.toLowerCase().startsWith('en'));
+        const prefer = ['Natural', 'Aria', 'Jenny', 'Google US English', 'Samantha', 'Zira', 'Google UK English Female'];
+        this.voice = prefer.map((n) => vs.find((v) => v.name.includes(n))).find(Boolean) ?? vs[0] ?? null;
+      };
+      pick();
+      speechSynthesis.onvoiceschanged = pick;
+      // Browsers only allow speech after the user has interacted with the page: speak the current question on the first click.
+      const unlock = () => {
+        document.removeEventListener('pointerdown', unlock);
+        if (!this.spokeOnce && this.readAloud() && this.prompt() && !this.done()) this.say(this.prompt()!.text);
+      };
+      document.addEventListener('pointerdown', unlock);
+    }
     const id = this.route.snapshot.paramMap.get('id')!;
     try {
       const s = await this.api.getInterview(id);
@@ -118,6 +144,8 @@ export class LiveStage implements OnInit, OnDestroy {
   }
   ngOnDestroy() {
     if (this.revealTimer) clearTimeout(this.revealTimer);
+    if (this.streamTimer) clearInterval(this.streamTimer);
+    this.micWanted = false;
     this.rec?.stop?.();
     if (this.ttsSupported) speechSynthesis.cancel();
   }
@@ -134,6 +162,8 @@ export class LiveStage implements OnInit, OnDestroy {
     this.sending.set(true);
     this.pending.set(text);
     this.answer = '';
+    this.autoGrow();
+    if (this.ttsSupported) speechSynthesis.cancel();
     this.scrollSoon();
     const before = s.transcript.length;
     try {
@@ -172,27 +202,50 @@ export class LiveStage implements OnInit, OnDestroy {
     }
   }
 
-  /** Show turns from `from` onward one at a time so the interviewer appears to respond live. */
+  /** Show turns from `from` onward one at a time; interviewer lines stream in word by word, like a live reply. */
   private revealFrom(from: number) {
     if (this.revealTimer) clearTimeout(this.revealTimer);
+    if (this.streamTimer) clearInterval(this.streamTimer);
     const all = this.s()?.transcript ?? [];
     let i = from;
     const step = () => {
-      if (i >= all.length) return;
+      if (i >= all.length) { this.streamId.set(null); return; }
       const t = all[i++];
       this.shownCount.set(i);
       this.scrollSoon();
-      if (t.role === 'interviewer') this.say(t.text);
-      const delay = t.role === 'candidate' ? 350 : Math.min(2200, 500 + t.text.length * 12);
-      this.revealTimer = setTimeout(step, delay);
+      if (t.role !== 'interviewer') { this.revealTimer = setTimeout(step, 250); return; }
+      this.say(t.text);
+      const words = t.text.split(/(\s+)/);
+      let w = 0;
+      this.streamId.set(t.id);
+      this.streamText.set('');
+      this.streamTimer = setInterval(() => {
+        w = Math.min(words.length, w + 2);
+        this.streamText.set(words.slice(0, w).join(''));
+        if (w % 8 === 0) this.scrollSoon();
+        if (w >= words.length) {
+          clearInterval(this.streamTimer!);
+          this.streamTimer = null;
+          this.streamId.set(null);
+          this.scrollSoon();
+          this.revealTimer = setTimeout(step, 450);
+        }
+      }, 55);
     };
     step();
   }
 
+  shown(t: Turn) {
+    return t.id === this.streamId() ? this.streamText() : t.text;
+  }
+
   private say(text: string) {
     if (!this.readAloud() || !this.ttsSupported) return;
+    this.spokeOnce = true;
     const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1.03;
+    if (this.voice) u.voice = this.voice;
+    u.rate = 1.02;
+    u.pitch = 1.05;
     u.onstart = () => this.speaking.set(true);
     u.onend = () => this.speaking.set(false);
     speechSynthesis.speak(u);
@@ -208,27 +261,61 @@ export class LiveStage implements OnInit, OnDestroy {
 
   toggleMic() {
     if (this.listening()) return this.stopMic();
+    this.micError.set('');
     const Ctor = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    if (!Ctor) return;
-    const rec = new Ctor();
-    rec.lang = 'en-US';
-    rec.continuous = true;
-    rec.interimResults = true;
-    const base = this.answer ? this.answer.trimEnd() + ' ' : '';
-    rec.onresult = (e: any) => {
-      let txt = '';
-      for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
-      this.answer = base + txt;
+    if (!Ctor) {
+      this.micError.set('Voice input needs Chrome or Edge. You can still type your answer.');
+      return;
+    }
+    if (this.ttsSupported) speechSynthesis.cancel(); // don't transcribe Ava's own voice
+    this.micWanted = true;
+    this.micBase = this.answer ? this.answer.trimEnd() + ' ' : '';
+    this.micFinal = '';
+    const start = () => {
+      const rec = new Ctor();
+      rec.lang = 'en-US';
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.onresult = (e: any) => {
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const r = e.results[i];
+          if (r.isFinal) this.micFinal += r[0].transcript.trim() + ' ';
+          else interim += r[0].transcript;
+        }
+        this.answer = (this.micBase + this.micFinal + interim).replace(/\s+/g, ' ').trimStart();
+        this.autoGrow();
+      };
+      rec.onerror = (e: any) => {
+        if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') {
+          this.micWanted = false;
+          this.micError.set('Microphone is blocked. Allow it from the icon in the address bar, then try again.');
+        } else if (e?.error === 'audio-capture') {
+          this.micWanted = false;
+          this.micError.set('No microphone found.');
+        }
+      };
+      // Chrome stops after a pause: keep listening until the user presses stop.
+      rec.onend = () => (this.micWanted ? setTimeout(() => this.micWanted && start(), 120) : this.listening.set(false));
+      this.rec = rec;
+      try { rec.start(); } catch { /* already started */ }
     };
-    rec.onend = () => this.listening.set(false);
-    rec.onerror = () => this.listening.set(false);
-    this.rec = rec;
-    rec.start();
+    start();
     this.listening.set(true);
   }
   private stopMic() {
+    this.micWanted = false;
     this.rec?.stop?.();
     this.listening.set(false);
+  }
+
+  autoGrow() {
+    setTimeout(() => {
+      const el = this.ta()?.nativeElement;
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+    });
   }
 
   compName(id?: string) {
