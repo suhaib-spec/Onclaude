@@ -16,6 +16,12 @@ import { AppState, Role } from '../../core/ui-state';
         <p class="lead">
           Hintwise is a smart helper that gives candidates hints, <span class="strike">never the answer</span>, and shows you how well they used it.
         </p>
+        <a class="live-cta" routerLink="/interview/new" (click)="state.setRole('interviewer')">
+          <span class="mic-ic"><span class="pulse"></span>🎙</span>
+          <span class="cta-txt"><strong>Start a live AI interview</strong><small>Paste a job post. The AI interviews, you watch the scores build live.</small></span>
+          <span class="arrow">→</span>
+        </a>
+        <div class="or">or try the case-based flow</div>
         <div class="ctas">
           <button class="cta" (click)="go('interviewer')">
             <span class="cta-ic">🧑‍💼</span>
@@ -72,7 +78,19 @@ import { AppState, Role } from '../../core/ui-state';
     .strike { position: relative; font-weight: 700; color: var(--text); white-space: nowrap; }
     .strike::after { content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 8px; border-radius: 4px; background: #fde68a; z-index: -1; transform: rotate(-1deg); }
     .lead { font-size: 18px; color: var(--text-2); max-width: 680px; margin: 0 auto; line-height: 1.6; }
-    .ctas { display: flex; gap: 18px; justify-content: center; margin-top: 40px; flex-wrap: wrap; }
+    .live-cta { display: inline-flex; align-items: center; gap: 18px; text-align: left; margin-top: 36px; padding: 22px 26px 22px 22px; border-radius: 24px;
+      color: #fff; text-decoration: none !important; min-width: min(560px, 100%);
+      background: radial-gradient(400px 160px at 0% 0%, rgba(167,139,250,.6), transparent 60%), linear-gradient(135deg, #12142b, #2e1f6b);
+      box-shadow: 0 26px 60px -18px rgba(46,31,107,.8); transition: transform .18s, box-shadow .18s; animation: heroIn .4s ease-out both; }
+    .live-cta:hover { transform: translateY(-3px); box-shadow: 0 32px 70px -18px rgba(46,31,107,.9); }
+    .live-cta:hover .arrow { transform: translateX(4px); }
+    .live-cta .cta-txt strong { font-size: 21px; }
+    .mic-ic { position: relative; width: 60px; height: 60px; flex: none; display: grid; place-items: center; font-size: 30px; border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #d946ef); }
+    .mic-ic .pulse { position: absolute; inset: 0; border-radius: 50%; border: 2px solid #c4b5fd; animation: micRing 1.6s ease-out infinite; }
+    @keyframes micRing { from { transform: scale(1); opacity: .9; } to { transform: scale(1.6); opacity: 0; } }
+    .or { margin-top: 26px; color: var(--text-3); font-size: 13px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+    .ctas { display: flex; gap: 18px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
     .cta { display: flex; align-items: center; gap: 16px; text-align: left; min-width: 320px; padding: 20px 22px; border-radius: 20px; cursor: pointer;
       font: inherit; border: 0; color: #fff; background: var(--grad); box-shadow: 0 18px 40px -14px rgba(99,102,241,.7); transition: transform .18s, box-shadow .18s; }
     .cta:hover { transform: translateY(-3px); box-shadow: 0 24px 50px -14px rgba(99,102,241,.8); }

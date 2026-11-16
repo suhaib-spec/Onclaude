@@ -1,0 +1,163 @@
+@if (error() && !s()) {
+  <div class="page"><div class="banner">⚠️ {{ error() }}</div></div>
+} @else if (!s()) {
+  <div class="stage"><div class="skeleton" style="height: 70vh; flex: 1"></div><div class="skeleton" style="height: 70vh; flex: 1"></div></div>
+} @else {
+  @let sess = s()!;
+  <div class="topbar">
+    <div class="title">
+      <a routerLink="/interviewer" class="back">←</a>
+      <div>
+        <div class="kicker"><span class="live-dot" [class.off]="done()"></span>{{ done() ? 'Interview complete' : 'Live AI interview' }}</div>
+        <strong>{{ sess.jobTitle }}</strong>&nbsp;<span class="muted">at {{ sess.company }} · {{ sess.candidateName }}</span>
+      </div>
+    </div>
+    <div class="segmented">
+      <button [class.on]="view() === 'both'" (click)="setView('both')">Both</button>
+      <button [class.on]="view() === 'candidate'" (click)="setView('candidate')">🎓 Candidate</button>
+      <button [class.on]="view() === 'interviewer'" (click)="setView('interviewer')">🧑‍💼 Interviewer</button>
+    </div>
+  </div>
+
+  @if (error()) { <div class="banner err">⚠️ {{ error() }} <span class="spacer"></span><button class="btn sm" (click)="error.set('')">Dismiss</button></div> }
+
+  <div class="stage" [class.solo]="view() !== 'both'">
+    <!-- ============ CANDIDATE ROOM ============ -->
+    @if (view() !== 'interviewer') {
+      <section class="room">
+        <div class="room-head">
+          <div class="avatar" [class.speaking]="speakingNow()" [class.thinking]="sending()">
+            <span class="ring r1"></span><span class="ring r2"></span>
+            <span class="face">🤖</span>
+          </div>
+          <div class="who">
+            <strong>Ava</strong>
+            <span class="status">
+              @if (sending()) { thinking about your answer… }
+              @else if (speakingNow()) { speaking }
+              @else if (done()) { finished }
+              @else { listening }
+            </span>
+          </div>
+          <span class="spacer"></span>
+          @if (ttsSupported) {
+            <button class="btn sm ghost light" [class.on]="readAloud()" (click)="toggleRead()" title="Read questions aloud">
+              🔊 {{ readAloud() ? 'Voice on' : 'Voice off' }}
+            </button>
+          }
+        </div>
+
+        <div class="progress">
+          <div class="row">
+            <span class="qn">@if (done()) { All {{ total() }} questions done } @else { Question {{ qIndex() + 1 }} of {{ total() }} }</span>
+            @if (currentComp(); as c) { <span class="chip comp">🎯 {{ c.name }}</span> }
+            @if (prompt()?.kind === 'follow_up' && !done()) { <span class="chip fu">↪ Follow-up</span> }
+          </div>
+          <div class="pbar"><span [style.width.%]="progress()"></span></div>
+        </div>
+
+        <div class="prompt-q">
+          @if (prompt(); as p) {
+            <hw-typewriter [text]="p.text" (typing)="typing.set($event)" />
+          }
+        </div>
+
+        <div class="convo" #convo>
+          @for (t of turns(); track t.id) {
+            <div class="turn {{ t.role }} {{ t.kind }}">
+              @if (t.role === 'interviewer') { <span class="mini">🤖</span> }
+              <div class="bubble">
+                {{ t.text }}
+                @if (t.liveScore && view() === 'both') {
+                  <span class="sig {{ t.liveScore.signal }}">{{ t.liveScore.signal === 'strong' ? '▲ strong' : t.liveScore.signal === 'ok' ? '● ok' : '▼ weak' }}</span>
+                }
+              </div>
+            </div>
+          }
+          @if (pending()) {
+            <div class="turn candidate answer"><div class="bubble">{{ pending() }}</div></div>
+          }
+          @if (sending()) {
+            <div class="turn interviewer"><span class="mini">🤖</span><div class="bubble think"><span class="typing"><i></i><i></i><i></i></span></div></div>
+          }
+        </div>
+
+        @if (done()) {
+          <div class="finished">🎉 That’s the interview. Thanks, {{ sess.candidateName }}!</div>
+        } @else {
+          <div class="composer" [class.rec]="listening()">
+            <textarea
+              class="ans"
+              rows="3"
+              [(ngModel)]="answer"
+              (keydown)="onKey($event)"
+              [disabled]="sending()"
+              placeholder="Type your answer… (Enter to send, Shift+Enter for a new line)"
+            ></textarea>
+            <div class="row">
+              @if (micSupported) {
+                <button class="btn mic" [class.on]="listening()" (click)="toggleMic()" [title]="listening() ? 'Stop' : 'Answer by voice'">
+                  🎤 {{ listening() ? 'Listening…' : 'Speak' }}
+                </button>
+              }
+              <span class="muted small">{{ answer.trim() ? answer.trim().split(' ').length + ' words' : '' }}</span>
+              <span class="spacer"></span>
+              <button class="btn sm ghost" (click)="finish()" [disabled]="sending()">End early</button>
+              <button class="btn primary" (click)="send()" [disabled]="!answer.trim() || sending()">
+                @if (sending()) { <span class="spinner"></span> } Send ↵
+              </button>
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+    <!-- ============ INTERVIEWER PANEL ============ -->
+    @if (view() !== 'candidate') {
+      <section class="panel">
+        <div class="ph">
+          <h4>Interviewer view · scored live against the job description</h4>
+        </div>
+        <div class="summary">
+          <hw-score-ring [value]="overall()" [size]="124" caption="overall" />
+          <div class="sum-txt">
+            @if (recommendation(); as r) {
+              <span class="rec {{ recClass[r] }}">{{ r }}</span>
+            } @else {
+              <span class="rec wait">Waiting for answers</span>
+            }
+            <p class="muted small">
+              {{ answeredCount() }} answer{{ answeredCount() === 1 ? '' : 's' }} scored ·
+              {{ sess.competencies.length }} skills from the job post
+            </p>
+          </div>
+        </div>
+
+        <div class="cta" [class.final]="!!sess.scorecard">
+          <span class="cta-ic">{{ sess.scorecard ? '✅' : '📡' }}</span>
+          <span class="cta-txt">{{ cta() }}</span>
+        </div>
+
+        <div class="rubric">
+          @for (c of sess.competencies; track c.id) {
+            <hw-rubric-card [comp]="c" [score]="scoreFor(c.id)" [latest]="latestByComp()[c.id]" [active]="currentComp()?.id === c.id" />
+          }
+        </div>
+
+        @if (sess.scorecard; as sc) {
+          <div class="sc grid-2">
+            <div class="col good">
+              <h4>What went well</h4>
+              <ul>@for (x of sc.strengths; track $index) { <li>{{ x }}</li> }</ul>
+            </div>
+            <div class="col bad">
+              <h4>What to probe</h4>
+              <ul>@for (x of sc.concerns; track $index) { <li>{{ x }}</li> }</ul>
+            </div>
+          </div>
+          <p class="muted small fine">The AI suggests; a person makes the hiring decision.</p>
+        }
+      </section>
+    }
+  </div>
+}

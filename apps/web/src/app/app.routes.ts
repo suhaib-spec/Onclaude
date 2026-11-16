@@ -37,5 +37,15 @@ export const routes: Routes = [
     loadComponent: () => import('./features/candidate/take/take').then((m) => m.Take),
     title: 'Assessment · Hintwise',
   },
+  {
+    path: 'interview/new',
+    loadComponent: () => import('./features/interview/new-interview/new-interview').then((m) => m.NewInterview),
+    title: 'New live interview · Hintwise',
+  },
+  {
+    path: 'live/:id',
+    loadComponent: () => import('./features/interview/live-stage/live-stage').then((m) => m.LiveStage),
+    title: 'Live interview · Hintwise',
+  },
   { path: '**', redirectTo: '' },
 ];

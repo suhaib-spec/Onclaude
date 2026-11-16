@@ -5,7 +5,8 @@ import * as path from 'path';
 import { DataSource, Repository } from 'typeorm';
 import { normaliseAssessmentInput } from '../assessments/assessment-input';
 import { DEMO_DIR } from '../config/paths';
-import { Assessment, Message, Session } from '../entities';
+import { Assessment, InterviewSession, Message, Session } from '../entities';
+import { InterviewsService } from '../interviews/interviews.service';
 
 /** Fixed demo invite tokens so the live demo URLs are stable (spec §6). */
 export const DEMO_INVITES: { domain: string; token: string }[] = [
@@ -19,6 +20,8 @@ export interface SeedResult {
   invites: string[];
   skipped?: boolean;
   existing?: number;
+  /** Live AI interviews seeded (the completed "Maya Chen" demo, T-021). */
+  interviews?: number;
 }
 
 /** Loads demo/assessments/*.json and demo/sessions/*.json from the repo root on first start and on reset. */
@@ -32,9 +35,17 @@ export class SeederService implements OnApplicationBootstrap {
     @InjectRepository(Assessment) private readonly assessments: Repository<Assessment>,
     @InjectRepository(Session) private readonly sessions: Repository<Session>,
     @InjectRepository(Message) private readonly messages: Repository<Message>,
+    @InjectRepository(InterviewSession) private readonly interviewRepo: Repository<InterviewSession>,
+    private readonly interviews: InterviewsService,
   ) {}
 
   async onApplicationBootstrap() {
+    try {
+      // Live interviews are seeded independently so an existing database also gets the demo interview (T-021).
+      if ((await this.interviewRepo.count()) === 0) await this.seedInterviews();
+    } catch (err: any) {
+      this.log.error(`Seeding the demo interview failed: ${err?.message ?? err}`);
+    }
     try {
       const existing = await this.assessments.count();
       if (existing > 0) {
@@ -49,9 +60,22 @@ export class SeederService implements OnApplicationBootstrap {
   }
 
   async reset(): Promise<SeedResult> {
-    await this.ds.query('TRUNCATE TABLE "messages", "sessions", "assessments" RESTART IDENTITY CASCADE');
+    await this.ds.query('TRUNCATE TABLE "messages", "sessions", "assessments", "interview_sessions" RESTART IDENTITY CASCADE');
     this.lastResult = await this.seed();
+    try {
+      this.lastResult.interviews = await this.seedInterviews();
+    } catch (err: any) {
+      this.log.error(`Seeding the demo interview failed: ${err?.message ?? err}`);
+      this.lastResult.interviews = 0;
+    }
     return this.lastResult;
+  }
+
+  /** Seeds the completed "Maya Chen" live interview for the demo JD. */
+  async seedInterviews(): Promise<number> {
+    const s = await this.interviews.seedDemo();
+    this.log.log(`Seeded demo live interview: ${s.candidateName} (${s.scorecard?.overall ?? '?'}/100, ${s.scorecard?.recommendation ?? '?'}).`);
+    return 1;
   }
 
   private readJsonDir(sub: string): { file: string; data: any }[] {

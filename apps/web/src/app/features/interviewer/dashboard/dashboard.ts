@@ -3,11 +3,12 @@ import { Router, RouterLink } from '@angular/router';
 import { AssessmentSummary } from '../../../core/api.models';
 import { ApiService, errorMessage } from '../../../core/api.service';
 import { ToastService } from '../../../core/ui-state';
+import { LiveInterviewsList } from '../../interview/components/live-interviews-list';
 import { DOMAIN_ICON, DOMAIN_LABEL, relTime } from '../../../shared/labels';
 
 @Component({
   selector: 'hw-dashboard',
-  imports: [RouterLink],
+  imports: [RouterLink, LiveInterviewsList],
   template: `
     <div class="page">
       <div class="hero-band">
@@ -23,6 +24,9 @@ import { DOMAIN_ICON, DOMAIN_LABEL, relTime } from '../../../shared/labels';
           <a class="btn lg white" routerLink="/interviewer/assessments/new">＋ New assessment</a>
         </div>
       </div>
+
+      <hw-live-interviews-list />
+      <h2 class="sec">🧩 Case assessments</h2>
 
       @if (loading()) {
         <div class="cards">
@@ -80,6 +84,7 @@ import { DOMAIN_ICON, DOMAIN_LABEL, relTime } from '../../../shared/labels';
     .hero-band .chip.grad { background: rgba(255,255,255,.2); }
     .btn.white { background: #fff; color: var(--accent-ink); border-color: transparent; }
     .btn.light { color: #fff; } .btn.light:hover:not(:disabled) { background: rgba(255,255,255,.15); color: #fff; }
+    .sec { margin-bottom: 14px; }
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
     .acard { display: flex; flex-direction: column; gap: 10px; animation: fadeUp .4s ease both; }
     .dom-ic { font-size: 18px; }

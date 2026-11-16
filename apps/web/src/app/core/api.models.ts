@@ -280,3 +280,52 @@ export interface Health {
   ok: boolean;
   llmMode: 'live' | 'mock';
 }
+
+// ---- Live AI interview (T-021, docs/mvp/LIVE_INTERVIEW_SPEC.md) ----
+export interface Competency { id: string; name: string; description: string; weight: number; jdQuote: string; keywords: string[] }
+export interface InterviewQuestion { id: string; competencyId: string; text: string; followUp: string }
+export type Signal = 'strong' | 'ok' | 'weak';
+export interface LiveScore { competencyId: string; score: number; signal: Signal; evidence: string; reason: string }
+export type TurnKind = 'greeting' | 'question' | 'follow_up' | 'ack' | 'answer' | 'closing';
+export interface Turn {
+  id: string;
+  role: 'interviewer' | 'candidate';
+  kind: TurnKind;
+  text: string;
+  at: string;
+  competencyId?: string;
+  questionIndex?: number;
+  liveScore?: LiveScore;
+}
+export interface CompetencyScore { competencyId: string; name: string; weight: number; score: number; jdQuote: string; evidence: string[]; summary: string }
+export type Recommendation = 'Strong hire' | 'Hire' | 'Lean no' | 'No hire';
+export interface Scorecard { overall: number; recommendation: Recommendation; cta: string; strengths: string[]; concerns: string[]; mock?: boolean }
+export interface InterviewSession {
+  id: string;
+  jobTitle: string;
+  company: string;
+  jobDescription: string;
+  candidateName: string;
+  status: 'in_progress' | 'completed';
+  competencies: Competency[];
+  questions: InterviewQuestion[];
+  currentIndex: number;
+  followUpAsked: boolean;
+  transcript: Turn[];
+  scores: CompetencyScore[];
+  scorecard: Scorecard | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+export interface InterviewSummary {
+  id: string;
+  jobTitle: string;
+  company: string;
+  candidateName: string;
+  status: 'in_progress' | 'completed';
+  overall: number | null;
+  recommendation: Recommendation | null;
+  createdAt: string;
+}
+export interface InterviewInput { jobTitle: string; company: string; jobDescription: string; candidateName: string }
+export interface DemoJd { jobTitle: string; company: string; jobDescription: string }

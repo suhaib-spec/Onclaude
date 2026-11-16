@@ -7,7 +7,11 @@ import {
   AssessmentSummary,
   ChatResponse,
   DraftHintsRequest,
+  DemoJd,
   Health,
+  InterviewInput,
+  InterviewSession,
+  InterviewSummary,
   HintStep,
   InviteResponse,
   PublicMessage,
@@ -91,6 +95,26 @@ export class ApiService {
   }
   submit(token: string) {
     return this.p(this.http.post<{ status: 'submitted' }>(`${API}/take/${encodeURIComponent(token)}/submit`, {}));
+  }
+
+  // ---- live AI interview (T-021) ----
+  demoJd() {
+    return this.p(this.http.get<DemoJd>(`${API}/interviews/demo-jd`));
+  }
+  createInterview(body: InterviewInput) {
+    return this.p(this.http.post<InterviewSession>(`${API}/interviews`, body));
+  }
+  listInterviews() {
+    return this.p(this.http.get<InterviewSummary[]>(`${API}/interviews`));
+  }
+  getInterview(id: string) {
+    return this.p(this.http.get<InterviewSession>(`${API}/interviews/${id}`));
+  }
+  answerInterview(id: string, text: string) {
+    return this.p(this.http.post<InterviewSession>(`${API}/interviews/${id}/answer`, { text }));
+  }
+  finishInterview(id: string) {
+    return this.p(this.http.post<InterviewSession>(`${API}/interviews/${id}/finish`, {}));
   }
 }
 

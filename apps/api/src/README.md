@@ -14,6 +14,7 @@ and CORS for `http://localhost:4200`, then logs a one-line startup summary.
 | [`ai/`](./ai/README.md) | The gated AI pipeline, evaluation and insights |
 | [`assessments/`](./assessments/README.md) | Interviewer: assessment CRUD, draft hints, invites, session lists |
 | [`sessions/`](./sessions/README.md) | Interviewer: session review and (re-)evaluation |
+| [`interviews/`](./interviews/README.md) | Live AI interview grounded in a job description (T-021) |
 | [`candidate/`](./candidate/README.md) | Candidate `/take/:token` endpoints and public views |
 | [`demo-data/`](./demo-data/README.md) | Seeder (`demo/` folder) and `POST /demo/reset` |
 | [`health/`](./health/README.md) | `GET /health` → `{ok, llmMode}` |

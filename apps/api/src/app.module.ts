@@ -10,6 +10,8 @@ import { DemoController } from './demo-data/demo.controller';
 import { SeederService } from './demo-data/seeder.service';
 import { ENTITIES } from './entities';
 import { HealthController } from './health/health.controller';
+import { InterviewsController } from './interviews/interviews.controller';
+import { InterviewsService } from './interviews/interviews.service';
 import { SessionsController } from './sessions/sessions.controller';
 import { SessionsService } from './sessions/sessions.service';
 
@@ -28,7 +30,7 @@ import { SessionsService } from './sessions/sessions.service';
     TypeOrmModule.forFeature(ENTITIES),
     AiModule,
   ],
-  controllers: [HealthController, AssessmentsController, SessionsController, CandidateController, DemoController],
-  providers: [AssessmentsService, SessionsService, CandidateService, SeederService],
+  controllers: [HealthController, AssessmentsController, SessionsController, CandidateController, DemoController, InterviewsController],
+  providers: [AssessmentsService, SessionsService, CandidateService, InterviewsService, SeederService],
 })
 export class AppModule {}

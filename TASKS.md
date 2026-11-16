@@ -33,6 +33,7 @@ and what was done. Rules for using it are in [AGENTS.md](./AGENTS.md) §3–4.
 | T-018 | MVP: interviewer-built assessments with a gated AI assistant + 2 demo use cases | MVP | Done | 2026-11-16 | 2026-11-16 |
 | T-019 | Run locally without PostgreSQL: built-in database fallback | MVP | Done | 2026-11-16 | 2026-11-16 |
 | T-020 | PowerPoint deck, Word presenter script, and UI polish | MVP | Done | 2026-11-16 | 2026-11-16 |
+| T-021 | Live AI Interview: JD-grounded interviewer, live rubric scores and one-line CTA | MVP | Done | 2026-11-16 | 2026-11-16 |
 
 ---
 
@@ -126,6 +127,30 @@ _None._
 ---
 
 ## Completed tasks
+
+### T-021 — Live AI Interview: JD-grounded interviewer, live rubric scores and one-line CTA
+- **Status:** Done
+- **Requested:** 2026-11-16 by Suhaib: turn the demo into a live interview session based on a job description. For the
+  candidate, the AI asks a question, waits for the response and responds to whatever they say. For the interviewer, build
+  a proper rubric grounded in the job description from the candidate's answers, give scores, and a one-line call to
+  action. Intuitive, dynamic, engaging UI for a 5-minute proof-of-concept demo.
+- **Conflict check:** Changes the demo focus set in T-018 (async case solving with a gated helper). Raised with the owner;
+  **resolved: add it as the headline mode and keep the case flow as a backup demo** (no removal).
+- **Questions & answers:** Scope → add as the headline mode. Demo JD → Product / Business Analyst. API key → none; make
+  the scripted (mock) mode as convincing as possible for the demo JD.
+- **Research notes:** Spec: [`docs/mvp/LIVE_INTERVIEW_SPEC.md`](./docs/mvp/LIVE_INTERVIEW_SPEC.md).
+- **Files changed:** `apps/api/src/interviews/` (new module: entity, service, controller, mock interviewer, prompts),
+  `apps/api/src/{app.module.ts,entities/index.ts,demo-data/seeder.service.ts,README.md}`,
+  `apps/web/src/app/features/interview/` (new: JD form, live stage view, rubric card, typewriter, live list),
+  `apps/web/src/app/{app.routes.ts,core/api.*.ts,features/landing,features/interviewer/dashboard}`, `docs/mvp/LIVE_INTERVIEW_SPEC.md`.
+- **Verification:** API tests 41/41 and both builds pass; full mock interview (strong answer, weak answer triggering a
+  follow-up, three more answers) ends at 97 / Strong hire with a one-line CTA; stage view screenshot checked.
+- **Summary:** AI interviewer "Ava" interviews against a JD (demo: Product Analyst at Quillstone), asks 4 questions with
+  follow-ups on thin answers, reacts to what the candidate said, and scores each answer live against a 4-skill rubric
+  built from the JD (JD quote + verbatim evidence). The interviewer gets an overall score, a recommendation and a
+  one-line call to action. Split-screen stage view for the demo; voice in/out where the browser supports it. Lead fix
+  after integration: a skill's score is the average of best and mean (a follow-up recovers some, not all), and evidence
+  quotes come from the newest answer.
 
 ### T-020 — PowerPoint deck, Word presenter script, and UI polish
 - **Status:** Done
