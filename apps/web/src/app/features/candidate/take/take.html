@@ -1,0 +1,264 @@
+@if (loading()) {
+  <div class="center-state"><div class="spinner big"></div><p>Opening your assessment…</p></div>
+} @else if (notFound()) {
+  <div class="center-state">
+    <div class="state-ic">🔎</div>
+    <h2>Invite not found</h2>
+    <p class="muted">The code <span class="mono">{{ token() }}</span> doesn’t match any invite. Check the link from your interviewer.</p>
+    <a class="btn primary" routerLink="/candidate">Enter another code</a>
+  </div>
+} @else if (error()) {
+  <div class="center-state">
+    <div class="state-ic">⚠️</div>
+    <h2>Can’t load this invite</h2>
+    <p class="muted">{{ error() }}</p>
+    <button class="btn primary" (click)="load()">Try again</button>
+  </div>
+} @else if (view(); as v) {
+  <!-- ======================= START ======================= -->
+  @if (phase() === 'start') {
+    <div class="start page">
+      <div class="start-card card">
+        <div class="start-hero">
+          <div class="row wrap">
+            <span class="chip glass">{{ domainLabel[v.assessment.domain] }}</span>
+            <span class="chip glass">👤 {{ v.assessment.role }}</span>
+            <span class="chip glass">⏱ {{ v.assessment.timeLimitMinutes }} minutes</span>
+          </div>
+          <h1>{{ v.assessment.title }}</h1>
+          <p>{{ v.assessment.summary }}</p>
+        </div>
+        <div class="start-body">
+          <h3>Your AI helper for this assessment</h3>
+          <p class="muted small" style="margin: 4px 0 14px">
+            Help, not answers. Working well with AI is part of what’s assessed: ask good questions, double-check what it says, and use hints wisely (they cost points).
+          </p>
+          <hw-ai-policy [policy]="v.assessment.aiPolicy" />
+
+          <div class="how3">
+            <div><span>📄</span><strong>Read the brief & materials</strong></div>
+            <div><span>✍️</span><strong>Write your answer</strong><small>Autosaves as you type</small></div>
+            <div><span>🚀</span><strong>Submit before time runs out</strong><small>The timer starts when you click Start</small></div>
+          </div>
+
+          <form class="start-form" (ngSubmit)="start()">
+            <input class="input lg" [(ngModel)]="name" name="name" placeholder="Your full name" autocomplete="name" />
+            <button class="btn primary lg" type="submit" [disabled]="starting()">
+              @if (starting()) { <span class="spinner"></span> } Start assessment →
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ======================= WORKSPACE ======================= -->
+  @if (phase() === 'work') {
+    <div class="ws">
+      <div class="topbar">
+        <div class="tb-title">
+          <strong>{{ v.assessment.title }}</strong>
+          <span class="muted small">{{ v.assessment.role }} · {{ v.session.candidateName }}</span>
+        </div>
+        <span class="spacer"></span>
+        <div class="timer" [class]="'timer ' + timerTone()" title="Time remaining">
+          <span class="t-ic">⏱</span>
+          <span class="t-val">{{ timerText() }}</span>
+          <span class="t-bar"><span [style.width.%]="timerPct()"></span></span>
+        </div>
+        @if (timerTone() === 'over') { <span class="chip bad">Time’s up: please submit</span> }
+        <button class="btn primary" (click)="confirmOpen.set(true)">Submit ✓</button>
+      </div>
+
+      <div class="panes">
+        <!-- LEFT: brief + materials -->
+        <section class="pane left">
+          <div class="tabs">
+            <button [class.on]="leftTab() === 'brief'" (click)="leftTab.set('brief')">📄 Brief</button>
+            @for (m of v.assessment.materials; track m.id) {
+              <button [class.on]="leftTab() === m.id" (click)="leftTab.set(m.id)">
+                {{ m.kind === 'csv' ? '▦' : m.kind === 'markdown' ? '📝' : '📎' }} {{ m.name }}
+              </button>
+            }
+          </div>
+          <div class="pane-body">
+            @if (leftTab() === 'brief') {
+              <div class="md" [innerHTML]="v.assessment.problemStatement | md"></div>
+            } @else {
+              @for (m of v.assessment.materials; track m.id) {
+                @if (m.id === leftTab()) { <hw-material-view [material]="m" /> }
+              }
+            }
+          </div>
+        </section>
+
+        <!-- CENTRE: answer -->
+        <section class="pane centre">
+          <div class="pane-head">
+            <strong>✍️ Your answer</strong>
+            <div class="segmented sm">
+              <button [class.on]="answerMode() === 'write'" (click)="answerMode.set('write')">Write</button>
+              <button [class.on]="answerMode() === 'preview'" (click)="answerMode.set('preview')">Preview</button>
+            </div>
+            <span class="spacer"></span>
+            <span class="save" [class]="'save ' + saveState()">
+              @switch (saveState()) {
+                @case ('saving') { <span class="spinner sm"></span> Saving… }
+                @case ('saved') { ✓ Saved }
+                @case ('dirty') { ● Unsaved }
+                @case ('error') { ⚠ Not saved <button class="btn sm ghost" (click)="flushSave()">Retry</button> }
+                @default { Autosave on }
+              }
+            </span>
+          </div>
+          <div class="pane-body editor-body">
+            @if (answerMode() === 'write') {
+              <textarea
+                class="editor"
+                [(ngModel)]="answer"
+                (ngModelChange)="onAnswerChange()"
+                placeholder="Write your recommendation here. Markdown is supported.&#10;&#10;## Recommendation&#10;…&#10;&#10;## Reasoning&#10;…"
+                spellcheck="true"
+              ></textarea>
+            } @else {
+              @if (answer.trim()) {
+                <div class="md preview" [innerHTML]="answer | md"></div>
+              } @else {
+                <p class="muted preview">Nothing to preview yet.</p>
+              }
+            }
+          </div>
+          <div class="pane-foot muted small">{{ wordCount() }} words · Markdown supported</div>
+        </section>
+
+        <!-- RIGHT: AI chat -->
+        <section class="pane right">
+          <div class="pane-head chat-head">
+            <span class="ai-av">✨</span>
+            <div class="col">
+              <strong>Hintwise helper</strong>
+              <span class="small muted">Help, not answers.</span>
+            </div>
+          </div>
+
+          <div class="hint-panel">
+            <div class="ladder">
+              @for (l of levels(); track l) {
+                <div class="lvl" [class]="'lvl ' + levelState(l)" [title]="'Hint ' + l + ' · ' + levelInfo[l].name + ': ' + levelInfo[l].desc + ' (−' + cost(l) + ' pts)'">
+                  <span class="lvl-n">{{ levelState(l) === 'on' ? '✓' : levelState(l) === 'off' ? '–' : l }}</span>
+                  <span class="lvl-name">{{ levelInfo[l].name }}</span>
+                </div>
+                @if (l < 4) { <span class="lvl-line" [class.on]="levelState(l + 1) === 'on'"></span> }
+              }
+            </div>
+            @if (budget(); as b) {
+              <div class="budget-row">
+                <div class="meter">
+                  @for (i of range(b.hintBudget); track $index) {
+                    <span [class.used]="$index < b.hintsUsed"></span>
+                  }
+                </div>
+                <span class="small"><strong>{{ b.hintBudget - b.hintsUsed }}</strong>/{{ b.hintBudget }} hints left</span>
+                <span class="spacer"></span>
+                <span class="small pts" [class.neg]="b.hintPointsSpent > 0">−{{ b.hintPointsSpent }} pts</span>
+              </div>
+            }
+            <button class="btn warn hint-btn" (click)="getHint()" [disabled]="thinking() || !!hintBlockedReason()">
+              @if (hintBlockedReason()) { 🔒 {{ hintBlockedReason() }} } @else { 💡 Get a hint ({{ nextCost() ? '−' + nextCost() + ' pts' : 'free' }}) }
+            </button>
+          </div>
+
+          <div class="chat">
+            @if (!messages().length && !thinking()) {
+              <div class="chat-empty">
+                <div class="ce-ic">💬</div>
+                <strong>Ask me anything about the problem</strong>
+                <p class="small muted">I can clarify the question, explain ideas and point you to the right data. I won’t give you the answer. Try:</p>
+                <div class="sugs">
+                  @for (s of suggestions; track s) {
+                    <button class="sug" (click)="send(s)">{{ s }}</button>
+                  }
+                </div>
+              </div>
+            }
+            @for (m of messages(); track m.id) {
+              <div class="msg" [class.me]="m.role === 'candidate'">
+                @if (m.role === 'assistant') { <span class="av">✨</span> }
+                <div class="bub">
+                  @if (m.role === 'assistant' && m.meta) {
+                    @if (m.meta.decision === 'hint') {
+                      <div class="tag hint">💡 {{ hintName(m.meta.hintLevel) }}@if (m.meta.hintCost) { · −{{ m.meta.hintCost }} pts }</div>
+                    } @else if (m.meta.decision === 'decline') {
+                      <div class="tag decline">🛡 Can’t help with that one</div>
+                    } @else if (m.meta.decision === 'redirect') {
+                      <div class="tag redirect">🧭 Test it yourself</div>
+                    }
+                  }
+                  @if (m.role === 'assistant') {
+                    <div class="md" [innerHTML]="m.content | md"></div>
+                  } @else {
+                    <div class="plain">{{ m.content }}</div>
+                  }
+                  <div class="ts">{{ time(m.createdAt) }}</div>
+                </div>
+              </div>
+            }
+            @if (thinking()) {
+              <div class="msg"><span class="av">✨</span><div class="bub"><span class="typing"><i></i><i></i><i></i></span></div></div>
+            }
+            <div #chatEnd></div>
+          </div>
+
+          <div class="composer">
+            <textarea
+              [(ngModel)]="draft"
+              (keydown)="onChatKey($event)"
+              rows="2"
+              placeholder="Ask a question… (Enter to send, Shift+Enter for a new line)"
+            ></textarea>
+            <button class="btn primary send" (click)="send()" [disabled]="thinking() || !draft.trim()" title="Send">➤</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    @if (confirmOpen()) {
+      <div class="overlay" (click)="confirmOpen.set(false)">
+        <div class="dialog" (click)="$event.stopPropagation()">
+          <h2>Submit your answer?</h2>
+          <p class="muted">You won’t be able to edit your answer or chat with the AI afterwards.</p>
+          <div class="confirm-stats">
+            <div><strong>{{ wordCount() }}</strong><span>words</span></div>
+            <div><strong>{{ budget()?.hintsUsed ?? 0 }}</strong><span>hints used</span></div>
+            <div><strong>−{{ budget()?.hintPointsSpent ?? 0 }}</strong><span>hint points</span></div>
+          </div>
+          @if (wordCount() < 20) {
+            <div class="banner warn small" style="margin-top: 12px">Your answer looks very short. Are you sure?</div>
+          }
+          <div class="actions">
+            <button class="btn" (click)="confirmOpen.set(false)">Keep working</button>
+            <button class="btn primary" (click)="submit()" [disabled]="submitting()">
+              @if (submitting()) { <span class="spinner"></span> } Yes, submit
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- ======================= DONE ======================= -->
+  @if (phase() === 'done') {
+    <div class="center-state done">
+      <div class="confetti">@for (i of [1,2,3,4,5,6,7,8,9,10,11,12]; track i) { <i [style.--i]="i"></i> }</div>
+      <div class="done-ic">✓</div>
+      <h1>Submitted. Nice work{{ v.session.candidateName ? ', ' + v.session.candidateName.split(' ')[0] : '' }}!</h1>
+      <p class="muted">Your answer for <strong>{{ v.assessment.title }}</strong> is with your interviewer. They’ll see your answer and how you worked with the AI helper.</p>
+      <div class="confirm-stats">
+        <div><strong>{{ budget()?.hintsUsed ?? v.session.hintsUsed }}</strong><span>hints used</span></div>
+        <div><strong>−{{ budget()?.hintPointsSpent ?? v.session.hintPointsSpent }}</strong><span>hint points</span></div>
+        <div><strong>{{ messages().length || '—' }}</strong><span>AI messages</span></div>
+      </div>
+      <a class="btn" routerLink="/candidate" style="margin-top: 18px">Back to candidate home</a>
+    </div>
+  }
+}

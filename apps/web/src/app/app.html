@@ -1,0 +1,46 @@
+<header class="hdr" [class.compact]="isWorkspace()">
+  <a class="brand" routerLink="/">
+    <span class="logo">H</span>
+    <span class="brand-text">
+      <strong>Hintwise</strong>
+      <small>Help, not answers.</small>
+    </span>
+  </a>
+
+  <div class="spacer"></div>
+
+  <span
+    class="mode"
+    [class.live]="state.llmMode() === 'live' && !state.apiDown()"
+    [class.mock]="state.llmMode() === 'mock' && !state.apiDown()"
+    [class.down]="state.apiDown()"
+    [title]="state.apiDown() ? 'The API at /api is not responding' : state.llmMode() === 'mock' ? 'Demo mode: no AI key set, using the built-in demo helper' : 'Claude is live'"
+  >
+    <span class="pulse"></span>{{ state.modeLabel() }}
+  </span>
+
+  <div class="segmented role" role="tablist" aria-label="Demo role">
+    <button [class.on]="state.role() === 'interviewer'" (click)="switchRole('interviewer')">🧑‍💼 Interviewer</button>
+    <button [class.on]="state.role() === 'candidate'" (click)="switchRole('candidate')">🎓 Candidate</button>
+  </div>
+</header>
+
+@if (state.apiDown() && !isWorkspace()) {
+  <div class="offline">
+    <strong>Backend offline.</strong> Can’t reach <code>/api</code>. Start it with <code>npm run dev</code> at the repo root; this page retries automatically.
+    <button class="btn sm" (click)="state.checkHealth()">Retry now</button>
+  </div>
+}
+
+<main>
+  <router-outlet />
+</main>
+
+<div class="toasts" aria-live="polite">
+  @for (t of toast.toasts(); track t.id) {
+    <div class="toast" [class]="'toast ' + t.kind" (click)="toast.dismiss(t.id)">
+      <span class="ticon">{{ t.kind === 'error' ? '⚠️' : t.kind === 'success' ? '✅' : 'ℹ️' }}</span>
+      <span>{{ t.text }}</span>
+    </div>
+  }
+</div>

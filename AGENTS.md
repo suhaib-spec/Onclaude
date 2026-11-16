@@ -8,8 +8,10 @@
 
 ## 1. What this project is
 
-**AI-Assisted Coding Interview Trainer** — a tool that helps interviewees prepare for and practice
-*AI-assisted* coding interviews (interviews where candidates are expected to work alongside AI coding tools).
+**AI-Assisted Interview Trainer** (MVP name: *Hintwise*): a platform where **interviewers** build assessments and set
+guardrails for an AI assistant, and **interviewees** solve them with that *gated* AI, which helps without ever giving the
+answer. It is not limited to coding: any role where AI is useful (business, data, math, coding, …). A dedicated
+coding-interview track (browser IDE, sandbox, hidden tests) runs in parallel. *(Scope widened by the owner in T-018.)*
 
 Product scope, features, and tech stack are defined task by task. Nothing is assumed until a task specifies it.
 

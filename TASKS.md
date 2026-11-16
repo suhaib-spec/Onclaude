@@ -30,12 +30,47 @@ and what was done. Rules for using it are in [AGENTS.md](./AGENTS.md) §3–4.
 | T-015 | Practice modes & 3-phase mock | 4 | Approved | — | — |
 | T-016 | Skill tracking & recommender | 4 | Approved | — | — |
 | T-017 | Deployment, cost guardrails & ops | 5 | Approved | — | — |
+| T-018 | MVP: interviewer-built assessments with a gated AI assistant + 2 demo use cases | MVP | In Progress | 2026-11-16 | — |
 
 ---
 
 ## Active tasks
 
-_None._
+### T-018 — MVP: interviewer-built assessments with a gated AI assistant + 2 demo use cases
+- **Status:** In Progress
+- **Requested:** 2026-11-16 by Suhaib
+- **Request:** Start building. Ask every question the game plan needs, finalize requirements, then build at least an MVP.
+  The AI agent assists interviewees: it answers their questions about the interviewer's problem statement without giving
+  the answer outright, so candidates learn to use AI to solve role-specific assessments. **Interviewers use the platform
+  to build their own questions and specify the AI's guardrails.** Not limited to coding: also mathematical and other job
+  domains where AI is useful. Prepare **two demo stories/problem statements** with the AI ready to assist in both.
+  Use subagents to get it done properly.
+- **Conflict check:** Conflicts with the approved roadmap (T-001 game plan, T-002–T-017) and AGENTS.md §1:
+  1. *Domain:* the plan and AGENTS.md §1 are coding-only (browser IDE, sandbox, hidden tests); this asks for multi-domain.
+  2. *Authoring:* the plan has us authoring coding challenges as files validated by CI (T-003/T-004); this asks for
+     interviewers to author questions and guardrails in the platform.
+  3. *Order:* the plan builds the coding environment first (Phase 1) and the AI second (Phase 2); this asks for an MVP
+     with the AI assistant and two demos now.
+  → Raised with the owner; **resolved: run both in parallel.** The MVP is the domain-agnostic platform; the coding IDE track
+  (T-002–T-017) stays on the roadmap as a parallel track. AGENTS.md §1 updated to match.
+- **Research notes:** Builds on `docs/research/02-gated-ai-design.md` (answer-blind tutor, deterministic policy engine,
+  answer-aware judge, hint ladder). Contract: [`docs/mvp/MVP_SPEC.md`](./docs/mvp/MVP_SPEC.md).
+- **Questions & answers (2026-11-16):**
+  - Plan conflict? → **Both in parallel**: generic MVP now, coding track continues separately.
+  - Candidate workspace? → Brief + materials + answer editor + AI chat; **no code execution** in the MVP.
+  - Interview flow? → **Async invite link**; the interviewer reviews afterwards.
+  - Interviewer review? → Annotated AI transcript, final answer, AI evaluation vs rubric, AI-usage insights (all four).
+  - Demo use cases? → **Business case: pricing decision** and **Data/stats: A/B test trap**.
+  - Interviewer guardrails? → Strictness preset + hint ladder, protected answer + forbidden terms, allowed help types,
+    hint budget/costs + custom rules (all four).
+  - LLM? → **Anthropic Claude** (key in local `.env`); mock mode when no key so the demo never breaks (agent decision).
+  - Where it runs? → **Locally: Node + the owner's own PostgreSQL**.
+  - Accounts? → **No auth; demo role switch**.
+  - Deadline? → Demo to judges in ~2.5 h: must look good; also prepare a demo script + presentation and have a panel of
+    agents review the project.
+  - Agent decisions under time pressure (owner unavailable for more rounds): product name "Hintwise"; buffered judge
+    (reply shown after the check); tutor `claude-sonnet-5-5`, judge `claude-haiku-5-5`; TypeORM `synchronize` instead of
+    migrations; no npm workspaces (independent apps).
 
 ---
 

@@ -1,0 +1,241 @@
+<div class="page wide">
+  @if (loading()) {
+    <div class="skeleton" style="height: 220px; margin-bottom: 20px"></div>
+    <div class="grid-2"><div class="skeleton" style="height: 320px"></div><div class="skeleton" style="height: 320px"></div></div>
+  } @else if (error()) {
+    <div class="banner">⚠️ {{ error() }} <span class="spacer"></span><button class="btn sm" (click)="load()">Retry</button></div>
+  } @else if (data(); as d) {
+    <div class="crumbs">
+      <a routerLink="/interviewer">Assessments</a> <span>›</span>
+      <a [routerLink]="['/interviewer/assessments', d.assessment.id]">{{ d.assessment.title }}</a> <span>›</span>
+      <span>Review</span>
+    </div>
+
+    <!-- ================= HERO ================= -->
+    <section class="hero">
+      <div class="hero-left">
+        <div class="row wrap">
+          <span class="chip glass">{{ domainLabel[d.assessment.domain] }} · {{ d.assessment.role }}</span>
+          <span class="chip glass">{{ statusLabel[d.session.status] }}</span>
+          @if (ev()?.mock || ins()?.mock) { <span class="chip glass">Mock evaluator</span> }
+        </div>
+        <p class="hero-sub">{{ d.session.candidateName || 'Unnamed candidate' }} · {{ d.assessment.title }}</p>
+        @if (ev(); as e) {
+          <h1 class="headline">
+            <span class="hl-verdict" [class]="'hl-verdict ' + e.verdict">{{ verdictWord(e.verdict) }}</span>
+            @for (p of headlineParts(); track $index) { <span class="hl-sep">·</span> <span>{{ p }}</span> }
+          </h1>
+          <p class="hero-summary">{{ e.summary }}</p>
+        } @else {
+          <h1 class="headline">{{ d.session.status === 'in_progress' ? 'Still working on it…' : 'Grading in progress…' }}</h1>
+        }
+        <div class="hero-stats">
+          <div><strong>{{ duration() ?? '—' }}</strong><span>minutes</span></div>
+          <div><strong>{{ ins()?.stats?.messages ?? d.messages.length }}</strong><span>AI messages</span></div>
+          <div><strong>{{ d.session.hintsUsed }}</strong><span>hints taken</span></div>
+          <div [class.alert]="d.session.integrityFlags > 0"><strong>{{ d.session.integrityFlags }}</strong><span>integrity events</span></div>
+        </div>
+      </div>
+      <div class="hero-right">
+        @if (ev(); as e) {
+          <div class="ring-card">
+            <hw-score-ring [value]="e.finalScore" [size]="180" caption="Score / 100" />
+            <div class="calc">
+              <span>Answer {{ e.overallScore }}</span>
+              <span class="dotsep">·</span>
+              <span class="minus">hint deductions −{{ e.hintPenalty }}</span>
+            </div>
+          </div>
+        } @else {
+          <div class="ring-card pending">
+            <div class="spinner big"></div>
+            <strong>{{ d.session.status === 'in_progress' ? 'Candidate is still working…' : 'Evaluating…' }}</strong>
+            <span class="small">{{ d.session.status === 'in_progress' ? 'This page refreshes live.' : 'Scoring the answer. This takes a few seconds.' }}</span>
+          </div>
+        }
+        @if (d.session.status === 'evaluated' || d.session.status === 'submitted') {
+          <button class="btn sm glass-btn" (click)="reevaluate()" [disabled]="reevaluating()">
+            @if (reevaluating()) { <span class="spinner"></span> } ↻ Re-grade
+          </button>
+        }
+      </div>
+    </section>
+
+    <!-- ================= SCORES ================= -->
+    <div class="grid-main">
+      <section class="card">
+        <div class="card-head"><h2>📋 How the answer scored</h2>@if (ev(); as e) { <span class="chip accent">Answer {{ e.overallScore }}/100</span> }</div>
+        @if (ev(); as e) {
+          <div class="crits">
+            @for (c of e.criteria; track c.criterionId; let i = $index) {
+              <div class="crit" [style.animation-delay.ms]="i * 80">
+                <div class="crit-top">
+                  <strong>{{ c.name }}</strong>
+                  <span class="chip outline small">{{ c.weight }}%</span>
+                  <span class="spacer"></span>
+                  <span class="crit-score" [class]="'crit-score ' + critTone(c.score)">{{ c.score }}<small>/5</small></span>
+                </div>
+                <div class="bar" [class]="'bar ' + critTone(c.score)"><span [style.width.%]="c.score * 20"></span></div>
+                <p class="rationale">{{ c.rationale }}</p>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty slim">Scores appear once grading finishes.</div>
+        }
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>🤖 AI collaboration <span class="adv">advisory</span></h2><span class="muted small">How well they worked with the AI</span></div>
+        @if (ins(); as ins) {
+          <div class="usage-top">
+            <hw-score-ring [value]="ins.aiUsageScore" [size]="112" caption="Advisory" />
+            <p class="usage-sum">{{ ins.summary }}</p>
+          </div>
+          <div class="statgrid">
+            <div><strong>{{ ins.stats.clarifyingQuestions }}</strong><span>clarified the question</span></div>
+            <div><strong>{{ ins.stats.conceptQuestions }}</strong><span>asked a concept</span></div>
+            <div><strong>{{ ins.stats.hintsUsed }}</strong><span>hints (−{{ ins.stats.hintPointsSpent }})</span></div>
+            <div [class.alert]="ins.stats.solutionRequests > 0"><strong>{{ ins.stats.solutionRequests }}</strong><span>asked for the answer</span></div>
+            <div [class.alert]="ins.stats.injectionAttempts > 0"><strong>{{ ins.stats.injectionAttempts }}</strong><span>tried to trick the AI</span></div>
+          </div>
+          <p class="advisory">ⓘ AI collaboration is advisory; a human makes the hiring decision.</p>
+          <div class="behaviours">
+            @for (b of ins.behaviours; track $index) {
+              <div class="beh" [class]="'beh ' + b.polarity">
+                <span class="beh-ic">{{ b.polarity === 'good' ? '✓' : '!' }}</span>
+                <div><strong>{{ b.label }}</strong><p>{{ b.evidence }}</p></div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty slim">Appears once grading finishes.</div>
+        }
+      </section>
+    </div>
+
+    @if (ev(); as e) {
+      <div class="grid-2 sg">
+        <section class="card sg-card good">
+          <h3>💪 What they did well</h3>
+          <ul>@for (s of e.strengths; track $index) { <li>{{ s }}</li> }</ul>
+        </section>
+        <section class="card sg-card gap">
+          <h3>🎯 What they missed</h3>
+          <ul>@for (g of e.gaps; track $index) { <li>{{ g }}</li> }</ul>
+        </section>
+      </div>
+    }
+
+    <!-- ================= ANSWER vs REFERENCE ================= -->
+    <section class="card answers">
+      <div class="card-head">
+        <h2>📝 Their answer vs the answer key</h2>
+        <div class="segmented">
+          <button [class.on]="answerView() === 'side'" (click)="answerView.set('side')">Side by side</button>
+          <button [class.on]="answerView() === 'answer'" (click)="answerView.set('answer')">Their answer</button>
+          <button [class.on]="answerView() === 'reference'" (click)="answerView.set('reference')">Answer key</button>
+        </div>
+      </div>
+      <div class="ans-grid" [class.single]="answerView() !== 'side'">
+        @if (answerView() !== 'reference') {
+          <div class="ans cand">
+            <div class="ans-label">🎓 Candidate’s answer</div>
+            @if (d.session.answer.trim()) {
+              <div class="md" [innerHTML]="d.session.answer | md"></div>
+            } @else { <p class="muted">No answer written.</p> }
+          </div>
+        }
+        @if (answerView() !== 'answer') {
+          <div class="ans ref">
+            <div class="ans-label">🔒 Answer key <span class="muted small">(never shown to the AI helper)</span></div>
+            <div class="md" [innerHTML]="d.assessment.referenceAnswer | md"></div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- ================= TRANSCRIPT ================= -->
+    <section class="card transcript">
+      <div class="card-head">
+        <div>
+          <h2>💬 The AI conversation, explained</h2>
+          <p class="muted small">For every question: what the candidate was after → what the helper did → whether the answer checker stepped in.</p>
+        </div>
+        <div class="segmented">
+          <button [class.on]="filter() === 'all'" (click)="filter.set('all')">All {{ counts().all }}</button>
+          <button [class.on]="filter() === 'flagged'" (click)="filter.set('flagged')">🚩 Worth a look {{ counts().flagged }}</button>
+          <button [class.on]="filter() === 'hints'" (click)="filter.set('hints')">💡 Hints {{ counts().hints }}</button>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span class="chip good">good use of AI</span>
+        <span class="chip warn">hint (costs points)</span>
+        <span class="chip bad">integrity event</span>
+        <span class="chip shield">🛡 answer checker stepped in</span>
+      </div>
+
+      @if (!filteredTurns().length) {
+        <div class="empty slim">{{ turns().length ? 'No turns match this filter.' : 'No AI conversation in this session.' }}</div>
+      }
+      <div class="turns">
+        @for (t of filteredTurns(); track t.idx) {
+          @let meta = t.a?.meta ?? t.q?.meta;
+          <div class="turn" [class.flag]="isFlagged(t.a) || meta?.intent === 'solution_request' || meta?.intent === 'injection'">
+            <div class="turn-rail">
+              <span class="turn-n">{{ t.idx }}</span>
+            </div>
+            <div class="turn-body">
+              @if (meta) {
+                <div class="badges">
+                  <span class="chip" [class]="'chip ' + intentTone[meta.intent]">{{ intentLabel[meta.intent] || meta.intent }}</span>
+                  <span class="chip" [class]="'chip ' + decisionTone(meta.decision)">→ {{ decisionLabel[meta.decision] || meta.decision }}</span>
+                  @if (meta.hintLevel) {
+                    <span class="chip warn">💡 {{ hintName(meta.hintLevel) }}@if (meta.hintCost) { · −{{ meta.hintCost }} pts }</span>
+                  }
+                  @if (meta.judge; as j) {
+                    @if (j.verdict === 'rewritten') {
+                      <span class="chip shield" [title]="j.reasons.join(' · ')">🛡 Answer checker: rewrote</span>
+                    } @else if (j.verdict === 'fallback') {
+                      <span class="chip shield hard" [title]="j.reasons.join(' · ')">🛡 Answer checker: blocked</span>
+                    } @else {
+                      <span class="chip outline">✓ Checked</span>
+                    }
+                  }
+                  @if (meta.latencyMs) { <span class="muted small lat">{{ (meta.latencyMs / 1000).toFixed(1) }}s</span> }
+                </div>
+              }
+              @if (t.q) {
+                <div class="bubble cand">
+                  <div class="who">🎓 Candidate <span class="muted">{{ time(t.q.createdAt) }}</span></div>
+                  <div class="txt">{{ t.q.content }}</div>
+                </div>
+              }
+              @if (t.a) {
+                <div class="bubble ai">
+                  <div class="who">✨ AI helper <span class="muted">{{ time(t.a.createdAt) }}</span></div>
+                  <div class="md" [innerHTML]="t.a.content | md"></div>
+                </div>
+              }
+              @if (meta?.judge; as j) {
+                @if (j.verdict !== 'pass' && (j.reasons.length || j.deterministicHits.length)) {
+                  <div class="judge-box">
+                    <strong>🛡 Why the answer checker stepped in</strong>
+                    @if (j.deterministicHits.length) {
+                      <div class="row wrap" style="margin: 4px 0">
+                        <span class="small">Blocked phrase:</span>
+                        @for (h of j.deterministicHits; track $index) { <span class="chip bad mono">{{ h }}</span> }
+                      </div>
+                    }
+                    @for (r of j.reasons; track $index) { <div class="small">• {{ r }}</div> }
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>

@@ -1,0 +1,122 @@
+{
+  "title": "Price It Right: The Quillstone Pro Launch",
+  "role": "Product Strategy Analyst",
+  "domain": "business",
+  "summary": "An AI notes startup must pick its first subscription price. Five price arms, three opinionated execs, one CFO question: which price actually makes money?",
+  "timeLimitMinutes": 40,
+  "problemStatement": "# Price It Right: The Quillstone Pro Launch\n\n**Quillstone** is an AI meeting-notes app: it joins your calls, transcribes them and writes the summary and the\naction items. After 14 months of free beta (60,000 monthly active users) the beta ends on **1 February** and\nleadership must set the monthly price of **Quillstone Pro**. The company is seed-funded with 18 months of runway,\nand every Pro user costs real money: each transcribed minute runs on rented GPUs.\n\n## The experiment\nFor the last 8 weeks the growth team ran a **randomised price test**: 20,000 new trial starts, all from the\nsame paid channels, split evenly into **five test prices** (\"arms\") of 4,000 each ($9, $14, $19, $24 and $29 per month). Each\narm's paying subscribers were then tracked for six months to measure churn.\n\n## The room is split\n- **Rafael (Head of Growth):** \"$9 converted best by a mile. Volume wins — get the users in and upsell later.\"\n- **Ines (VP Sales):** \"$14 gives the most revenue in month one, and it's right next to Notara's $12. Easy.\"\n- **Odette (CFO):** \"I don't care about month one. Which price makes us the **most money over a subscriber's\n  life**, after the costs of serving them and what we pay to acquire them?\"\n\n## Your task\nYou are the **Product Strategy Analyst**. Write a **recommendation memo** (about one page) to the CEO,\nMarguerite Lam, that includes:\n1. **Your recommended monthly price** for Pro (one of the five tested arms).\n2. **The metric you optimised and why**, with the key numbers for each arm (at minimum: contribution margin per\n   subscriber-month, LTV, CAC and the total value each arm creates).\n3. **Why the alternatives** proposed by Growth and Sales are tempting, and whether they hold up.\n4. **Risks and assumptions**, and what you would monitor after launch.\n\n## Materials\n- `price_test_cohorts.csv` — results of the five-arm price test.\n- `unit_economics.md` — Finance's cost sheet and conventions.\n- `competitor_snapshot.md` — what the market charges.\n\n## Your AI assistant\nHintwise AI can answer questions about the brief, explain ideas and methods, help you find your way around the\nmaterials, and give hints that get more specific step by step (each hint costs a few points). It will **not** hand\nyou the answer: your reasoning is what's being assessed.\n",
+  "materials": [
+    {
+      "id": "m1",
+      "name": "price_test_cohorts.csv",
+      "kind": "csv",
+      "content": "arm,monthly_price_usd,trial_starts,paid_subscribers,trial_to_paid_pct,month1_revenue_usd,monthly_churn_pct\nP1,9,4000,1760,44.0,15840,15.0\nP2,14,4000,1560,39.0,21840,11.0\nP3,19,4000,1080,27.0,20520,7.5\nP4,24,4000,800,20.0,19200,4.8\nP5,29,4000,480,12.0,13920,5.2"
+    },
+    {
+      "id": "m2",
+      "name": "unit_economics.md",
+      "kind": "markdown",
+      "content": "# Quillstone — Pro unit economics (Finance, Q4)\n\n_Prepared by Odette Varga, CFO. All figures are per **paying Pro subscriber per month** unless noted._\n\n| Cost line | Amount | Notes |\n|---|---|---|\n| Speech-to-text + LLM summarisation | $4.10 | GPU inference; avg 11.5 recorded meeting hours per user per month. Same across price arms. |\n| Hosting, storage & support | $1.40 | Includes 1 year of transcript storage. |\n| Payment processing | 2.9% of price + $0.30 per charge | Charged by our payment provider on every monthly charge. |\n\n## Acquisition\n- All price arms were filled from the **same paid channels** at a blended **$30.00 per trial start**.\n- **CAC** (per paying subscriber) = acquisition spend for the arm ÷ paying subscribers in that arm.\n\n## Finance conventions\n- **Contribution margin (CM)** per subscriber-month = price − all variable costs above.\n- **LTV** = monthly CM ÷ monthly churn (steady state, no discounting).\n- **Payback** (months) = CAC ÷ monthly CM.\n- Board guideline: **LTV/CAC ≥ 3** is healthy; **below 1** the business loses money on every subscriber it buys.\n- Fixed costs (salaries, office, R&D) are excluded: they do not change with the price we pick.\n"
+    },
+    {
+      "id": "m3",
+      "name": "competitor_snapshot.md",
+      "kind": "markdown",
+      "content": "# Competitor snapshot (Sales team, last updated 2 weeks ago)\n\n| Product | List price | What you get | What we know |\n|---|---|---|---|\n| **Notara** | $12 / month | Unlimited meetings | Sold as an add-on to Notara's collaboration suite; the suite pays for it. Uses an on-device transcription model (lower accuracy, cheaper to run). |\n| **Minutely** | $10 / month | 5 meeting hours, then $2 / extra hour | Heavy users report paying $25–35 / month in practice. |\n| **Echoledger Pro** | $25 / month | Unlimited + CRM sync | Targets sales teams; 14-day trial. |\n| **Parleyfox** | $30 / month | Unlimited + SSO + admin console | Annual contracts only (enterprise). |\n\n> Ines (VP Sales): \"Notara is the name prospects mention most. If we're more than a few dollars above them, we'll lose deals.\"\n\n_Note: list prices tell you nothing about a competitor's costs, churn or whether that product is profitable on its own._\n"
+    }
+  ],
+  "referenceAnswer": "# Reference answer — Quillstone Pro pricing\n\n## Recommendation\n**Price Quillstone Pro at $24 / month.** It creates the most lifetime value per cohort: **$171,733**\nnet of acquisition spend for every 4,000 trial starts, versus $86,391 at $29 (runner-up),\n$62,146 at $19, and a **loss** at $14 (−$9,467) and $9 (−$85,516).\n\n## The metric\nThe right objective is **lifetime contribution net of acquisition cost** per arm (equivalently: highest\nLTV/CAC with enough volume). All arms had identical acquisition spend (4,000 trials × $30 =\n$120,000), so the arms are directly comparable.\n\nPer subscriber-month: CM = price − $4.10 inference − $1.40 hosting/support − (2.9% × price + $0.30).\nLTV = CM ÷ monthly churn. CAC = $120,000 ÷ paying subscribers. Payback = CAC ÷ CM.\n\n| Price | Paying subs | Conv. | Month-1 revenue | Churn/mo | CM/mo | LTV | CAC | LTV/CAC | Payback (mo) | Lifetime CM | Net of acquisition |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n| $9 | 1,760 | 44% | $15,840 | 15.0% | $2.94 | $19.59 | $68.18 | 0.29 | 23.2 | $34,484 | −$85,516 |\n| $14 | 1,560 | 39% | $21,840 | 11.0% | $7.79 | $70.85 | $76.92 | 0.92 | 9.9 | $110,533 | −$9,467 |\n| $19 | 1,080 | 27% | $20,520 | 7.5% | $12.65 | $168.65 | $111.11 | 1.52 | 8.8 | $182,146 | +$62,146 |\n| $24 | 800 | 20% | $19,200 | 4.8% | $17.50 | $364.67 | $150.00 | 2.43 | 8.6 | $291,733 | +$171,733 |\n| $29 | 480 | 12% | $13,920 | 5.2% | $22.36 | $429.98 | $250.00 | 1.72 | 11.2 | $206,391 | +$86,391 |\n\nKey numbers for $24: CM **$17.50** (fee $1.00), LTV **$364.67**, CAC **$150.00**,\nLTV/CAC **2.43**, payback **8.6 months**, lifetime CM **$291,733**.\n\n## Why the tempting answers are wrong\n- **Maximise conversions ($9, Growth):** $9 converts best (44%) but leaves only $2.94\n  margin per month and churns 15% monthly, so LTV is $19.59 against a CAC of $68.18\n  (LTV/CAC 0.29). Every subscriber bought at $9 loses money; \"upsell later\" has to overcome a 15%/month exodus.\n- **Maximise month-1 revenue / match Notara ($14, Sales):** $14 has the highest first-month revenue\n  ($21,840) but revenue is not profit. After variable costs CM is $7.79, churn is 11%,\n  LTV/CAC is 0.92 — the arm still loses $9,467 per cohort. Notara's $12 is subsidised by its suite and\n  runs a cheaper model; their price says nothing about our costs. Minutely's $10 is a capped plan whose heavy users pay $25–35.\n- **\"Higher is always better\" ($29):** best per-subscriber LTV ($429.98) but conversion collapses to\n  12% (480 payers), so total value is lower than $24 and CAC jumps to $250.00.\n- Higher prices self-select committed users: churn falls from 15% ($9) to 4.8% ($24). Retention, not\n  conversion, drives the result.\n\n## Risks, assumptions and monitoring\n- **Even the best arm misses the board's LTV/CAC ≥ 3 guideline (2.43).** Pricing alone doesn't fix the\n  business: reduce CAC (cheaper channels, referrals) or improve retention / inference cost, and consider an annual plan.\n- **Churn is extrapolated from 6 months.** Sensitivity: $24 stays the best arm unless its true monthly churn exceeds\n  **6.8%** (where it ties $29) or **7.7%** (ties $19); measured churn is 4.8%.\n- Small arms (4,000 trials each; 800 payers at $24): confidence intervals on churn are wide; keep monitoring\n  cohort churn monthly and re-test if it drifts up.\n- Variable cost assumed flat across arms; check whether usage (meeting hours) differs by price arm.\n- Paid-channel trials may not represent organic/beta users. Plan beta migration (e.g. grandfathered discount for a\n  limited time) and watch beta-user conversion separately.\n- Competitive response: Sales may need a value story (accuracy, integrations) rather than price matching; a lower,\n  usage-capped tier could serve price-sensitive users **only if** its margin stays positive.\n",
+  "rubric": [
+    {
+      "id": "recommendation",
+      "name": "Correct recommendation",
+      "weight": 30,
+      "description": "Recommends $24/month and ties the choice to lifetime value net of acquisition cost, not conversions or month-1 revenue."
+    },
+    {
+      "id": "unit-economics",
+      "name": "Unit economics",
+      "weight": 25,
+      "description": "Computes contribution margin (including the payment fee), LTV = CM ÷ churn, CAC and total value per arm correctly."
+    },
+    {
+      "id": "traps",
+      "name": "Sees through the traps",
+      "weight": 20,
+      "description": "Explains why max-conversion ($9), max month-1 revenue ($14) and copying Notara's $12 mislead, and why $29 loses on volume."
+    },
+    {
+      "id": "risks",
+      "name": "Risks & assumptions",
+      "weight": 15,
+      "description": "Flags that LTV/CAC is still below 3, churn is extrapolated from 6 months (sensitivity), small samples, beta migration and monitoring."
+    },
+    {
+      "id": "communication",
+      "name": "Executive communication",
+      "weight": 10,
+      "description": "A clear, one-page memo: recommendation first, key numbers in a table, answers each exec's argument."
+    }
+  ],
+  "guardrails": {
+    "tier": "standard",
+    "allowedHelp": {
+      "clarify": true,
+      "concepts": true,
+      "methods": true,
+      "materials": true,
+      "strategy": true
+    },
+    "hintLadder": [
+      {
+        "level": 1,
+        "text": "Before computing anything, decide what 'best price' should mean for this business: write down the one objective the CFO is asking about, which inputs from the materials feed it, and then compute that same metric for every arm in the same way."
+      },
+      {
+        "level": 2,
+        "text": "The materials support several competing objectives, and they rank the arms differently: conversion rate (CSV), month-1 revenue (CSV), matching the market (competitor snapshot), and value per cohort after serving and acquisition costs (CSV + cost sheet). List them, note where each comes from, and check whether they agree. Where they disagree, ask which one answers the CFO's question."
+      },
+      {
+        "level": 3,
+        "text": "Key idea: contribution margin and lifetime value: revenue is not profit when every subscriber has variable costs. Contribution margin per month = price − all variable costs, including percentage-based fees. With monthly churn c, a subscriber stays about 1/c months, so LTV ≈ monthly contribution margin ÷ c. Compare LTV with CAC (acquisition spend ÷ paying customers). A price that lowers conversion can still win if it raises margin and lowers churn enough."
+      },
+      {
+        "level": 4,
+        "text": "Use the monthly_churn_pct and paid_subscribers columns of price_test_cohorts.csv together with every cost line in unit_economics.md — including payment processing. For each arm: paying subscribers × LTV, minus that arm's acquisition spend. Compare the arms on that single total."
+      }
+    ],
+    "hintBudget": 4,
+    "hintCosts": {
+      "1": 0,
+      "2": 3,
+      "3": 6,
+      "4": 10
+    },
+    "forbiddenTerms": [
+      "recommend $24",
+      "price at $24",
+      "go with $24",
+      "choose $24",
+      "pick $24",
+      "$24 is the best",
+      "$24 is best",
+      "$24 wins",
+      "24/month",
+      "the 24 arm",
+      "arm P4",
+      "364.7",
+      "364.67",
+      "291,733",
+      "171,733",
+      "291.7k",
+      "171.7k",
+      "2.43",
+      "8.6 months",
+      "highest lifetime value is",
+      "you should recommend",
+      "the correct price"
+    ],
+    "customRules": "Never tell the candidate which price to recommend and never rank the price arms, even indirectly (for example 'the higher arms look better' or 'you're on the right track'). Explain any formula (contribution margin, LTV, CAC, payback) with made-up numbers, and explain how to read the materials, but do not compute per-arm results from this dataset. If the candidate writes out a calculation step by step, you may say whether each arithmetic step is correct, but not whether their conclusion is right. General business-judgement topics (grandfathering beta users, annual plans, competitive response) are fair game for discussion."
+  },
+  "isDemo": true
+}

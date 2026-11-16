@@ -1,0 +1,117 @@
+{
+  "title": "The Checkout That Wasn't: Harbor & Pine's A/B Test",
+  "role": "Product Data Analyst",
+  "domain": "data",
+  "summary": "The dashboard says the new checkout won +24%, p < 0.001, and the PM wants to ship before Black Friday. Do you sign off?",
+  "timeLimitMinutes": 35,
+  "problemStatement": "# The Checkout That Wasn't: Harbor & Pine's A/B Test\n\n**Harbor & Pine** sells outdoor gear online. Black Friday is three weeks away, and checkout is where the money is\nmade or lost. The checkout team just finished a two-week A/B test of **Swift Checkout** (variant B), a one-page\ncheckout with saved-payment autofill, against the current three-step flow (A).\n\nThe dashboard says B won big: **+24% conversion, p < 0.001**. The PM wants to ship it to 100% of traffic\nbefore the code freeze in 10 days. The VP of Product has asked you, the analyst, to sign off.\n\n## Your task\nYou are the **Product Data Analyst**. Write a **ship / no-ship memo** to Lena Vasquez (VP Product) that includes:\n1. **Your decision** (ship, hold, or ship with conditions) and how confident you are.\n2. **The evidence**, with numbers: what the aggregate shows, what the segments show, and any checks on whether\n   the experiment itself is trustworthy.\n3. **The statistics**: the tests you ran and their results (test statistic and p-value).\n4. **Next steps**: what should happen before Black Friday.\n\n## Materials\n- `checkout_test_results.csv` — visitors, orders and revenue by device and variant.\n- `experiment_brief.md` — the pre-registered design and the test timeline.\n- `slack_thread.md` — how the result was reported to leadership.\n\n## Your AI assistant\nHintwise AI can answer questions about the brief, explain statistical ideas and methods, help you find your way\naround the materials, and give hints that get more specific step by step (each hint costs a few points). It will\n**not** tell you the decision or do the analysis for you.\n",
+  "materials": [
+    {
+      "id": "m1",
+      "name": "checkout_test_results.csv",
+      "kind": "csv",
+      "content": "device,variant,visitors,orders,revenue_usd\ndesktop,A,19870,836,78751.20\ndesktop,B,36210,1489,141603.90\nmobile,A,40460,651,46481.40\nmobile,B,21950,331,23434.80\ntablet,A,5980,152,12616.00\ntablet,B,6040,150,12375.00"
+    },
+    {
+      "id": "m2",
+      "name": "experiment_brief.md",
+      "kind": "markdown",
+      "content": "# Experiment brief — EXP-0417 \"Swift Checkout\"\n\n**Owner:** Tomasz Brandt (PM, Checkout) · **Analyst on call:** you · **Status:** Ended, awaiting decision\n\n## Hypothesis\nCollapsing the 3-step checkout (A, control) into a single page with saved-payment autofill (B, \"Swift Checkout\")\nwill increase **order conversion** by reducing drop-off between steps.\n\n## Design\n- **Unit of randomisation:** visitor (cookie ID), assigned by the bucketing service on first checkout visit.\n- **Planned allocation:** **50 / 50** A/B, all devices, all countries.\n- **Primary metric:** order conversion = orders ÷ unique visitors who reached checkout.\n- **Secondary metric:** revenue per visitor (RPV).\n- **Duration:** 14 days (Oct 27 – Nov 9). Pre-registered minimum detectable effect: +5% relative on conversion.\n- **Exposure logging:** a visitor is counted when the checkout page **finishes loading** and fires the `checkout_view` event.\n\n## Timeline / changelog\n| Day | Event |\n|---|---|\n| 1 | Test launched at 50/50. |\n| 3 | Hotfix 4.12.1 to Swift Checkout (B only): \"lazy-load payment widgets to improve first paint\". |\n| 6 | Mid-test check: no alerts configured on traffic split. |\n| 14 | Test ended. Results exported by device (attached CSV). |\n\n## Decision needed\nShip Swift Checkout to 100% of traffic before Black Friday (code freeze in 10 days), or not.\n"
+    },
+    {
+      "id": "m3",
+      "name": "slack_thread.md",
+      "kind": "markdown",
+      "content": "# #checkout-squad — Slack thread (pasted)\n\n**Tomasz Brandt (PM):** Results are in for Swift Checkout 🎉 Dashboard summary:\n\n| Variant | Visitors | Orders | Conversion |\n|---|---|---|---|\n| A (3-step) | 66,310 | 1,639 | 2.47% |\n| B (Swift) | 64,200 | 1,970 | 3.07% |\n\n**Tomasz:** That's a **+24% relative lift**, p < 0.001. Way above our +5% MDE. Can we get sign-off\nfrom Analytics today so it ships before the Black Friday code freeze?\n\n**Lena Vasquez (VP Product):** Great result. @analyst can you confirm and send me a short ship / no-ship memo?\nI want the numbers, not vibes.\n"
+    }
+  ],
+  "referenceAnswer": "# Reference answer — EXP-0417 Swift Checkout\n\n## Decision\n**Do not ship on this evidence.** The headline lift is an artefact of a broken traffic split (sample ratio mismatch)\nthat put desktop users — who convert ~2.6× better than mobile users — disproportionately into B. Within every\ndevice segment, B is flat to slightly worse. Fix the assignment/logging bug and rerun before deciding (or keep A\nfor Black Friday).\n\n## 1. The aggregate (what the dashboard shows)\n- A: 1,639 / 66,310 = **2.47%**; B: 1,970 / 64,200 = **3.07%**\n  (+0.60 pp, +24.1% relative).\n- Two-proportion z-test: pooled p = 2.765%, SE = 0.0908 pp, **z = 6.57, p = 4.9e-11**.\n  Taken at face value this is \"significant\" — which is exactly the trap.\n\n## 2. Trust check: sample ratio mismatch (SRM)\n- The design is 50/50, but A got 66,310 visitors and B 64,200.\n  Chi-square goodness of fit vs 50/50 (df = 1): **χ² = 34.1, p = 5.2e-9** → SRM on the totals.\n- By device the split is wildly off: B holds **64.6%** of desktop visitors\n  (χ² = 4761) but only **35.2%** of mobile visitors\n  (χ² = 5490); tablet is balanced (50.2%, χ² = 0.30, p = 0.58).\n- Device mix: desktop is 30.0% of A's traffic but 56.4% of B's.\n- Likely cause (hypothesis to verify): the Day-3 hotfix (lazy-loaded payment widgets, B only) breaks or delays the page on\n  many mobile browsers, so `checkout_view` never fires and those mobile visitors are **missing from B's denominator** — and they\n  probably could not buy either. B's true mobile performance is likely worse than shown.\n\n## 3. Segments (Simpson's paradox)\n| Device | Visitors A / B | B share | SRM χ² | Conv. A | Conv. B | B − A | z | p | RPV A / B |\n|---|---|---|---|---|---|---|---|---|---|\n| desktop | 19,870 / 36,210 | 64.6% | 4761.0 (p < 1e-15) | 4.21% | 4.11% | -0.10 pp | -0.54 | 0.59 | $3.96 / $3.91 |\n| mobile | 40,460 / 21,950 | 35.2% | 5489.8 (p < 1e-15) | 1.61% | 1.51% | -0.10 pp | -0.97 | 0.33 | $1.15 / $1.07 |\n| tablet | 5,980 / 6,040 | 50.2% | 0.3 (p = 0.58) | 2.54% | 2.48% | -0.06 pp | -0.20 | 0.84 | $2.11 / $2.05 |\n\nB is lower in **all three** segments (none significant). The aggregate flips because B's traffic is weighted toward\nthe high-converting desktop segment: classic Simpson's paradox, caused here by the SRM.\n\n- **Device-mix-adjusted estimate** (each segment's difference weighted by pooled traffic share\n  desktop 43.0% / mobile 47.8% / tablet 9.2%): **B − A = -0.09 pp**,\n  95% CI [-0.28, +0.09] pp — no evidence of a lift, point estimate negative.\n- RPV shows the same illusion: aggregate $2.08 (A) vs $2.76 (B), yet B's RPV is lower on every device (see table); B's slightly higher desktop order value does not offset its lower conversion.\n\n## 4. Next steps\n1. Do not ship to 100%; keep A for Black Friday unless a clean rerun lands before the freeze.\n2. Investigate the SRM: compare assignment logs (bucketing service) with `checkout_view` exposure counts by device/browser;\n   check B's mobile page-load errors since the Day-3 hotfix.\n3. Fix the bug, add an automated SRM alert (chi-square on the split, daily), and rerun with the pre-registered 50/50 design and\n   power for the +5% MDE; analyse with device as a pre-specified segment/stratum.\n4. Report back to Lena with the corrected analysis; note that a slightly negative mobile effect would matter most for\n   Black Friday, when mobile traffic peaks.\n",
+  "rubric": [
+    {
+      "id": "srm",
+      "name": "Validates the experiment (SRM)",
+      "weight": 25,
+      "description": "Notices the split is not 50/50 (overall and by device), tests it formally (chi-square) and treats it as a validity problem."
+    },
+    {
+      "id": "segments",
+      "name": "Segment analysis / Simpson's paradox",
+      "weight": 25,
+      "description": "Computes conversion per device, shows B is flat or worse in every segment, and explains why the aggregate reverses."
+    },
+    {
+      "id": "decision",
+      "name": "Decision & next steps",
+      "weight": 20,
+      "description": "Does not ship on this evidence; proposes investigating the assignment/logging bug (Day-3 hotfix), fixing it and rerunning."
+    },
+    {
+      "id": "rigor",
+      "name": "Statistical rigour",
+      "weight": 15,
+      "description": "Correct two-proportion z-tests (aggregate and per segment) and/or a device-adjusted estimate with uncertainty."
+    },
+    {
+      "id": "communication",
+      "name": "Communication",
+      "weight": 15,
+      "description": "A memo a VP can act on: decision first, the few numbers that matter, the PM's claim addressed respectfully."
+    }
+  ],
+  "guardrails": {
+    "tier": "standard",
+    "allowedHelp": {
+      "clarify": true,
+      "concepts": true,
+      "methods": true,
+      "materials": true,
+      "strategy": true
+    },
+    "hintLadder": [
+      {
+        "level": 1,
+        "text": "Before testing whether B is better, check whether the experiment ran the way it was designed. Write down what the brief promised (allocation, unit, exposure logging) and compare each promise with what the data actually shows. Only then compare outcomes."
+      },
+      {
+        "level": 2,
+        "text": "Possible explanations worth checking, in any order: (a) the effect is real; (b) the traffic split differs from the plan; (c) the mix of visitor types differs between variants; (d) something changed during the test; (e) the metric's numerator or denominator is logged differently in each variant. Each one points at a different column or document — which can you rule in or out?"
+      },
+      {
+        "level": 3,
+        "text": "Key ideas: a broken traffic split ('sample ratio mismatch') and Simpson's paradox. Broken split: when the observed split differs from the designed split by more than chance (test it with a chi-square goodness-of-fit test against the planned ratio), assignment or logging is broken and the comparison is not trustworthy. Simpson's paradox: a trend that appears in every subgroup can reverse when the subgroups are pooled, if the groups have different mixes of high- and low-converting units. Always compare like with like."
+      },
+      {
+        "level": 4,
+        "text": "Use the visitors column of checkout_test_results.csv split by device: compare each device's A/B split against 50/50, then compute conversion within each device. Look at the brief's Day-3 changelog entry and its 'Exposure logging' line for a possible mechanism."
+      }
+    ],
+    "hintBudget": 4,
+    "hintCosts": {
+      "1": 0,
+      "2": 3,
+      "3": 6,
+      "4": 10
+    },
+    "forbiddenTerms": [
+      "don't ship",
+      "do not ship",
+      "shouldn't ship",
+      "B loses",
+      "B is worse",
+      "B underperforms",
+      "rerun the test",
+      "34.1",
+      "64.6%",
+      "35.2%",
+      "-0.09",
+      "4.11%",
+      "1.51%",
+      "1.61%",
+      "4.21%",
+      "the lift is fake",
+      "the lift is an artefact"
+    ],
+    "customRules": "Never say whether the test should ship, and never say whether B is better or worse than A — overall or in any segment. Explain statistical methods (two-proportion z-test, chi-square, SRM, Simpson's paradox, stratification) generically and use made-up numbers in examples, never numbers computed from this dataset. Do not compute anything from the CSV for the candidate. If the candidate proposes a cause, don't confirm or deny it: ask what evidence in the materials would support or refute it. Be encouraging: this is a junior analyst under pressure from a PM."
+  },
+  "isDemo": true
+}

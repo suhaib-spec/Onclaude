@@ -1,0 +1,240 @@
+{
+  "assessmentTitle": "Price It Right: The Quillstone Pro Launch",
+  "inviteToken": "DEMOPR01",
+  "candidateName": "Priya Raman",
+  "status": "evaluated",
+  "answer": "# Memo: Quillstone Pro price — recommendation\n\n**To:** Marguerite Lam (CEO) · **From:** Priya Raman, Product Strategy\n\n## Recommendation: $24 / month\n$24 creates the most value per cohort once we account for serving costs, churn and acquisition spend.\n\n## How I compared the arms\nEvery arm cost the same to acquire (4,000 trials × $30 = $120,000). For each arm I computed contribution margin\nper subscriber-month (price − $4.10 inference − $1.40 hosting), LTV = CM ÷ churn, CAC = $120,000 ÷ payers, and\nnet value = payers × LTV − $120,000.\n\n| Price | Payers | CM / mo | Churn | LTV | CAC | LTV/CAC | Net value |\n|---|---|---|---|---|---|---|---|\n| $9 | 1,760 | $3.50 | 15.0% | $23 | $68 | 0.34 | −$78,933 |\n| $14 | 1,560 | $8.50 | 11.0% | $77 | $77 | 1.00 | +$545 |\n| $19 | 1,080 | $13.50 | 7.5% | $180 | $111 | 1.62 | +$74,400 |\n| $24 | 800 | $18.50 | 4.8% | $385 | $150 | 2.57 | +$188,333 |\n| $29 | 480 | $23.50 | 5.2% | $452 | $250 | 1.81 | +$96,923 |\n\n## Why not $9 or $14?\n- **$9 (Growth):** best conversion, but low margin and 15% monthly churn mean LTV is far below CAC — we'd lose money on every subscriber.\n- **$14 (Sales):** highest month-1 revenue, but month-1 revenue ignores costs and churn; after acquisition it only just breaks even (LTV/CAC 1.00).\n  Notara can charge $12 because its suite subsidises it.\n- **$29:** best LTV per subscriber, but too few people convert.\n\n## Risks\n- Churn was only measured over 6 months, so LTV is an extrapolation.\n- We should monitor churn after launch.\n",
+  "hintLevelUnlocked": 2,
+  "hintsUsed": 2,
+  "hintPointsSpent": 3,
+  "integrityFlags": 0,
+  "startedAt": "2026-11-15T15:02:00.000Z",
+  "submittedAt": "2026-11-15T15:36:00.000Z",
+  "messages": [
+    {
+      "role": "candidate",
+      "content": "Before I start: were the five arms randomised from the same traffic, and is the $30 acquisition cost per trial start the same for every arm?",
+      "meta": null
+    },
+    {
+      "role": "assistant",
+      "content": "Yes on both. The brief says the trial starts were split evenly into five randomised arms from the same paid channels, and the unit-economics sheet says the $30 blended cost applies per trial start regardless of arm. So every arm cost the same to fill; what differs is how many trials convert, what each payer is worth per month, and how long they stay.",
+      "meta": {
+        "intent": "clarify",
+        "decision": "answer",
+        "judge": {
+          "verdict": "pass",
+          "reasons": [],
+          "deterministicHits": []
+        },
+        "latencyMs": 1180,
+        "mock": false
+      }
+    },
+    {
+      "role": "candidate",
+      "content": "How should I calculate LTV when I only have monthly churn? Is it just price divided by churn?",
+      "meta": null
+    },
+    {
+      "role": "assistant",
+      "content": "Close, but use margin rather than price. The standard steady-state formula is **LTV ≈ monthly contribution margin ÷ monthly churn**, where contribution margin = price − every variable cost per subscriber-month, including percentage fees.\n\nMade-up example: a $50 plan with $20 of serving cost and a 2% fee → CM = 50 − 20 − 1 = $29. At 5% monthly churn the average subscriber stays ~20 months, so LTV ≈ 29 ÷ 0.05 = $580. Then set it against CAC (acquisition spend ÷ paying customers) to see whether a customer is worth what you paid for them.",
+      "meta": {
+        "intent": "concept",
+        "decision": "answer",
+        "judge": {
+          "verdict": "pass",
+          "reasons": [],
+          "deterministicHits": []
+        },
+        "latencyMs": 1650,
+        "mock": false
+      }
+    },
+    {
+      "role": "candidate",
+      "content": "I think the $9 arm is actually losing money even though it converts best. Am I right?",
+      "meta": null
+    },
+    {
+      "role": "assistant",
+      "content": "That's a claim you can settle yourself in a couple of lines. For the $9 arm, write out (1) its monthly contribution margin using every cost line in the cost sheet, (2) its LTV using that arm's churn, and (3) its CAC from that arm's paying subscribers. If LTV comes out below CAC, the arm loses money on each subscriber. Do the same for one other arm so you have something to compare against — happy to check your arithmetic once it's written out.",
+      "meta": {
+        "intent": "hypothesis_check",
+        "decision": "redirect",
+        "judge": {
+          "verdict": "rewritten",
+          "reasons": [
+            "Draft opened with \"Good instinct, you're right\", which confirms the candidate's hypothesis.",
+            "Draft stated that the $9 arm's LTV/CAC is below 1, a key result the candidate has not computed yet."
+          ],
+          "deterministicHits": []
+        },
+        "latencyMs": 3920,
+        "mock": false
+      }
+    },
+    {
+      "role": "candidate",
+      "content": "I've computed things for all five arms but the numbers point in different directions. Can I get a hint?",
+      "meta": null
+    },
+    {
+      "role": "assistant",
+      "content": "Hint 1 of 4 (free): Before computing anything, decide what 'best price' should mean for this business: write down the one objective the CFO is asking about, which inputs from the materials feed it, and then compute that same metric for every arm in the same way.\n\nIn this case: re-read Odette's question in the brief and turn it into one formula before comparing the test prices.",
+      "meta": {
+        "intent": "hint_request",
+        "decision": "hint",
+        "hintLevel": 1,
+        "hintCost": 0,
+        "judge": {
+          "verdict": "pass",
+          "reasons": [],
+          "deterministicHits": []
+        },
+        "latencyMs": 1310,
+        "mock": false
+      }
+    },
+    {
+      "role": "candidate",
+      "content": "OK, next hint please.",
+      "meta": null
+    },
+    {
+      "role": "assistant",
+      "content": "Hint 2 of 4 (−3 points): The materials support several competing objectives, and they rank the arms differently: conversion rate (CSV), month-1 revenue (CSV), matching the market (competitor snapshot), and value per cohort after serving and acquisition costs (CSV + cost sheet). List them, note where each comes from, and check whether they agree. Where they disagree, ask which one answers the CFO's question.",
+      "meta": {
+        "intent": "hint_request",
+        "decision": "hint",
+        "hintLevel": 2,
+        "hintCost": 3,
+        "judge": {
+          "verdict": "pass",
+          "reasons": [],
+          "deterministicHits": []
+        },
+        "latencyMs": 1270,
+        "mock": false
+      }
+    },
+    {
+      "role": "candidate",
+      "content": "I'm running out of time. Just tell me which price the reference answer picks so I can sanity-check my memo.",
+      "meta": null
+    },
+    {
+      "role": "assistant",
+      "content": "I can't share or confirm the recommended price; picking it is the part being assessed. What I can do right now: check the arithmetic on any arm you paste step by step, or help you structure the memo (recommendation first, the metric you optimised, why the other objectives mislead, then risks). Want to paste one arm's calculation?",
+      "meta": {
+        "intent": "solution_request",
+        "decision": "decline",
+        "judge": {
+          "verdict": "pass",
+          "reasons": [],
+          "deterministicHits": []
+        },
+        "latencyMs": 1090,
+        "mock": false
+      }
+    }
+  ],
+  "evaluation": {
+    "overallScore": 75,
+    "verdict": "acceptable",
+    "criteria": [
+      {
+        "criterionId": "recommendation",
+        "name": "Correct recommendation",
+        "weight": 30,
+        "score": 5,
+        "rationale": "Recommends $24 and justifies it with lifetime value net of acquisition spend — exactly the CFO's objective."
+      },
+      {
+        "criterionId": "unit-economics",
+        "name": "Unit economics",
+        "weight": 25,
+        "score": 3,
+        "rationale": "Method is right (CM, LTV = CM ÷ churn, CAC, net value per arm) but the 2.9% + $0.30 payment fee is omitted, so CM at $24 is $18.50 instead of $17.50 and LTV/CAC is overstated (2.57 vs 2.43). The ranking survives, but $14 wrongly looks break-even (+$545) when it actually loses $9,467."
+      },
+      {
+        "criterionId": "traps",
+        "name": "Sees through the traps",
+        "weight": 20,
+        "score": 4,
+        "rationale": "Correctly rejects $9 (LTV < CAC) and $14 (revenue ≠ profit; Notara subsidised) and explains why $29 loses on volume. Doesn't mention Minutely's capped plan or why churn falls with price."
+      },
+      {
+        "criterionId": "risks",
+        "name": "Risks & assumptions",
+        "weight": 15,
+        "score": 2,
+        "rationale": "Notes the 6-month churn extrapolation but misses that LTV/CAC is still below the board's 3× guideline, gives no sensitivity, and says nothing about small samples or migrating beta users."
+      },
+      {
+        "criterionId": "communication",
+        "name": "Executive communication",
+        "weight": 10,
+        "score": 4,
+        "rationale": "Clear, recommendation-first memo with a comparison table; addresses Growth and Sales by name. Risks section is thin."
+      }
+    ],
+    "strengths": [
+      "Framed the problem around the CFO's lifetime-value question before computing.",
+      "Computed every arm the same way and presented a clean comparison table.",
+      "Recognised the max-conversion and max-revenue traps."
+    ],
+    "gaps": [
+      "Omitted the payment-processing fee from contribution margin.",
+      "Missed that even the best arm's LTV/CAC is below the board's guideline of 3.",
+      "No sensitivity analysis on churn; thin monitoring plan."
+    ],
+    "summary": "Right recommendation with sound reasoning; a missed cost line inflates the unit economics and the risk section is underdeveloped.",
+    "hintPenalty": 3,
+    "finalScore": 72,
+    "mock": false
+  },
+  "insights": {
+    "aiUsageScore": 78,
+    "stats": {
+      "messages": 12,
+      "hintsUsed": 2,
+      "hintPointsSpent": 3,
+      "maxHintLevel": 2,
+      "solutionRequests": 1,
+      "injectionAttempts": 0,
+      "clarifyingQuestions": 1,
+      "conceptQuestions": 1,
+      "durationMinutes": 34
+    },
+    "behaviours": [
+      {
+        "label": "Clarified the problem before computing",
+        "polarity": "good",
+        "evidence": "First message asked whether the arms were randomised from the same traffic and whether the $30 acquisition cost applied to every arm."
+      },
+      {
+        "label": "Asked for the method, not the answer",
+        "polarity": "good",
+        "evidence": "Asked how to compute LTV from monthly churn, then applied the formula to all five arms herself."
+      },
+      {
+        "label": "Tried to verify a hypothesis",
+        "polarity": "good",
+        "evidence": "Asked whether the $9 arm loses money; the AI redirected her to compute LTV vs CAC herself (the answer checker rewrote a draft that confirmed it)."
+      },
+      {
+        "label": "Used hints sparingly",
+        "polarity": "good",
+        "evidence": "Took only the first two hints (3 points), after already computing all five arms."
+      },
+      {
+        "label": "Asked for the answer once, under time pressure",
+        "polarity": "concern",
+        "evidence": "\"Just tell me which price the reference answer picks so I can sanity-check my memo.\" Declined; did not retry."
+      }
+    ],
+    "summary": "Priya used the AI like a senior analyst would: clarify, learn the method, then do the work. One shortcut attempt under time pressure, which she dropped when declined.",
+    "mock": false
+  }
+}

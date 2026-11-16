@@ -1,0 +1,290 @@
+<div class="page wide">
+  <div class="crumbs">
+    <a routerLink="/interviewer">Assessments</a> <span>›</span>
+    @if (isEdit) {
+      <a [routerLink]="['/interviewer/assessments', id()]">{{ d.title || 'Assessment' }}</a> <span>›</span> <span>Edit</span>
+    } @else {
+      <span>New</span>
+    }
+  </div>
+  <div class="page-head">
+    <div>
+      <h1>{{ isEdit ? 'Edit assessment' : 'New assessment' }}</h1>
+      <p class="sub">Write the case and decide exactly how much the AI helper is allowed to help.</p>
+    </div>
+    <div class="row">
+      <a class="btn" [routerLink]="isEdit ? ['/interviewer/assessments', id()] : ['/interviewer']">Cancel</a>
+      <button class="btn primary" (click)="save()" [disabled]="saving() || loading()">
+        @if (saving()) { <span class="spinner"></span> } {{ isEdit ? 'Save changes' : 'Create assessment' }}
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="skeleton" style="height: 420px"></div>
+  } @else {
+    <div class="layout">
+      <!-- ============ FORM ============ -->
+      <div class="form-col">
+        <nav class="secnav">
+          @for (s of sections; track s.id) {
+            <button [class.on]="section() === s.id" (click)="scrollTo(s.id)"><span>{{ s.icon }}</span> {{ s.label }}</button>
+          }
+        </nav>
+
+        <!-- 1 Basics -->
+        <section class="card sec" id="sec-basics">
+          <div class="section-title"><span class="num">1</span><h2>Basics</h2></div>
+          <p class="muted small sec-sub">What the candidate sees first.</p>
+          <div class="grid-2">
+            <div class="field span2">
+              <label>Title</label>
+              <input class="input" [(ngModel)]="d.title" placeholder="e.g. Should we raise the price of Pro?" />
+            </div>
+            <div class="field">
+              <label>Role</label>
+              <input class="input" [(ngModel)]="d.role" placeholder="e.g. Product Analyst" />
+            </div>
+            <div class="field">
+              <label>Domain</label>
+              <select class="select" [(ngModel)]="d.domain">
+                @for (dm of domains; track dm[0]) {
+                  <option [value]="dm[0]">{{ dm[1] }}</option>
+                }
+              </select>
+            </div>
+            <div class="field span2">
+              <label>Summary</label>
+              <textarea class="textarea" rows="2" [(ngModel)]="d.summary" placeholder="One or two sentences shown on the invite."></textarea>
+            </div>
+            <div class="field">
+              <label>Time limit (minutes)</label>
+              <input class="input" type="number" min="5" max="240" [(ngModel)]="d.timeLimitMinutes" />
+            </div>
+          </div>
+        </section>
+
+        <!-- 2 Problem & materials -->
+        <section class="card sec" id="sec-problem">
+          <div class="section-title"><span class="num">2</span><h2>Problem & materials</h2></div>
+          <p class="muted small sec-sub">Formatting (Markdown) supported. Candidates can read the materials; the AI helper treats them as information only.</p>
+          <div class="field">
+            <label>Problem statement</label>
+            <textarea class="textarea mono" rows="10" [(ngModel)]="d.problemStatement" placeholder="## Context&#10;…&#10;&#10;## Your task&#10;…"></textarea>
+          </div>
+
+          <div class="mat-head">
+            <h3>Materials <span class="chip">{{ d.materials.length }}</span></h3>
+            <div class="row wrap">
+              <button class="btn sm soft" (click)="addMaterial('markdown')">＋ Markdown</button>
+              <button class="btn sm soft" (click)="addMaterial('csv')">＋ CSV</button>
+              <button class="btn sm soft" (click)="addMaterial('text')">＋ Text</button>
+              <label class="btn sm">⇪ Upload<input type="file" hidden accept=".csv,.md,.txt,.json,.py,.sql,.js,.ts" (change)="uploadMaterial($event)" /></label>
+            </div>
+          </div>
+          @if (!d.materials.length) {
+            <div class="empty slim">No materials yet. Add a dataset, memo or notes the candidate can use.</div>
+          }
+          @for (m of d.materials; track m.id) {
+            <div class="mat" [class.open]="editingMaterial() === m.id">
+              <div class="mat-row" (click)="editingMaterial.set(editingMaterial() === m.id ? null : m.id)">
+                <span class="kind">{{ m.kind === 'csv' ? '▦' : m.kind === 'markdown' ? 'M↓' : '¶' }}</span>
+                <strong>{{ m.name }}</strong>
+                <span class="chip outline">{{ m.kind }}</span>
+                <span class="muted small">{{ m.content.length }} chars</span>
+                <span class="spacer"></span>
+                <button class="btn sm ghost danger" (click)="$event.stopPropagation(); removeMaterial(m)">Remove</button>
+                <span class="chev">{{ editingMaterial() === m.id ? '▴' : '▾' }}</span>
+              </div>
+              @if (editingMaterial() === m.id) {
+                <div class="mat-edit">
+                  <div class="row">
+                    <input class="input" [(ngModel)]="m.name" placeholder="File name" />
+                    <select class="select" style="width: 150px" [(ngModel)]="m.kind">
+                      <option value="markdown">markdown</option>
+                      <option value="csv">csv</option>
+                      <option value="text">text</option>
+                      <option value="code">code</option>
+                    </select>
+                  </div>
+                  <textarea class="textarea mono" rows="8" [(ngModel)]="m.content"></textarea>
+                </div>
+              }
+            </div>
+          }
+        </section>
+
+        <!-- 3 Protected answer & rubric -->
+        <section class="card sec" id="sec-answer">
+          <div class="section-title"><span class="num">3</span><h2>Answer key & scoring</h2></div>
+          <p class="muted small sec-sub">Used only for grading and for the answer checker. The AI helper the candidate talks to never sees it.</p>
+          <div class="field">
+            <label class="row">🔒 Answer key <span class="chip bad">Never shown to the AI helper or the candidate</span></label>
+            <textarea class="textarea mono protected" rows="7" [(ngModel)]="d.referenceAnswer" placeholder="The ideal answer, key numbers and reasoning."></textarea>
+          </div>
+
+          <div class="mat-head">
+            <h3>Scoring criteria</h3>
+            <div class="row">
+              <span class="sum" [class.ok]="weightSum() === 100" [class.over]="weightSum() > 100">
+                {{ weightSum() === 100 ? '✓' : weightSum() > 100 ? '▲' : '▼' }} {{ weightSum() }} / 100
+              </span>
+              <button class="btn sm ghost" (click)="balanceWeights()">Balance</button>
+              <button class="btn sm soft" (click)="addCriterion()">＋ Criterion</button>
+            </div>
+          </div>
+          <div class="sumbar"><span [style.width.%]="weightSum() > 100 ? 100 : weightSum()" [class.ok]="weightSum() === 100" [class.over]="weightSum() > 100"></span></div>
+          <div class="rubric">
+            @for (c of d.rubric; track c.id) {
+              <div class="crit">
+                <div class="crit-main">
+                  <input class="input name" [(ngModel)]="c.name" placeholder="Criterion" />
+                  <input class="input" [(ngModel)]="c.description" placeholder="What does great look like?" />
+                </div>
+                <div class="w">
+                  <input class="input" type="number" min="0" max="100" [(ngModel)]="c.weight" />
+                  <span class="muted small">%</span>
+                </div>
+                <button class="btn icon ghost danger" title="Remove" (click)="removeCriterion(c.id)">✕</button>
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- 4 Guardrails -->
+        <section class="card sec guard" id="sec-guardrails">
+          <div class="section-title"><span class="num">4</span><h2>AI helper rules</h2><span class="chip grad">Your rules</span></div>
+          <p class="muted small sec-sub">Applied to every message. An answer checker also reviews each reply and blocks anything that gives the answer away.</p>
+
+          <div class="g-block">
+            <div class="g-label">
+              <strong>Mode</strong>
+              <span class="muted small">Interview mode stops at Hint 3; Practice mode allows all 4.</span>
+            </div>
+            <div class="segmented">
+              <button [class.on]="d.guardrails.tier === 'strict'" (click)="setTier('strict')">🔒 Interview mode (tighter)</button>
+              <button [class.on]="d.guardrails.tier === 'standard'" (click)="setTier('standard')">⚖️ Practice mode (more help)</button>
+            </div>
+          </div>
+
+          <div class="g-block col">
+            <div class="g-label"><strong>What the helper may do</strong><span class="muted small">Anything switched off is politely declined.</span></div>
+            <div class="helps">
+              @for (h of helpInfo; track h.key) {
+                <label class="help" [class.on]="d.guardrails.allowedHelp[h.key]">
+                  <span class="switch"><input type="checkbox" [checked]="d.guardrails.allowedHelp[h.key]" (change)="toggleHelp(h.key)" /><span></span></span>
+                  <span><strong>{{ h.label }}</strong><small>{{ h.desc }}</small></span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <div class="g-block col">
+            <div class="g-label row">
+              <div><strong>Hint levels (gentle → specific)</strong> <span class="muted small">Each hint request unlocks the next level. The helper only sees the levels already unlocked.</span></div>
+              <span class="spacer"></span>
+              <button class="btn sm magic" (click)="draftHints()" [disabled]="drafting()">
+                @if (drafting()) { <span class="spinner"></span> Drafting… } @else { ✨ Draft hints with AI }
+              </button>
+            </div>
+            <div class="ladder">
+              @for (h of d.guardrails.hintLadder; track h.level) {
+                <div class="rung" [class.off]="h.level > maxLevel()">
+                  <div class="lv">
+                    <span class="lvn">Hint {{ h.level }}</span>
+                    <span class="lvname">{{ levelInfo[h.level].name }}</span>
+                    <span class="lvcost">
+                      −<input type="number" min="0" [ngModel]="costOf(h.level)" (ngModelChange)="setCost(h.level, $event)" [disabled]="h.level > maxLevel()" /> pts
+                    </span>
+                  </div>
+                  <textarea
+                    class="textarea"
+                    rows="2"
+                    [(ngModel)]="h.text"
+                    [disabled]="h.level > maxLevel()"
+                    [placeholder]="h.level > maxLevel() ? 'Not available in Interview mode' : levelInfo[h.level].desc"
+                  ></textarea>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="g-block">
+            <div class="g-label"><strong>Number of hints</strong><span class="muted small">Most hints a candidate can take. Maximum deduction: −{{ maxPenalty() }} pts.</span></div>
+            <div class="budget">
+              <input type="range" min="0" [max]="maxLevel()" [(ngModel)]="d.guardrails.hintBudget" />
+              <span class="chip accent">{{ d.guardrails.hintBudget }} hint{{ d.guardrails.hintBudget == 1 ? '' : 's' }}</span>
+            </div>
+          </div>
+
+          <div class="g-block col">
+            <div class="g-label"><strong>Blocked phrases</strong><span class="muted small">The helper must never say these (e.g. the final number). Press Enter to add.</span></div>
+            <div class="chips-input">
+              @for (t of d.guardrails.forbiddenTerms; track t) {
+                <span class="chip bad">{{ t }} <button (click)="removeTerm(t)" aria-label="Remove">×</button></span>
+              }
+              <input [(ngModel)]="newTerm" (keydown)="onTermKey($event)" (blur)="addTerm()" placeholder="e.g. 9.1%, keep the price" />
+            </div>
+          </div>
+
+          <div class="g-block col">
+            <div class="g-label"><strong>Extra instructions for the helper</strong><span class="muted small">Anything else the helper should follow, in plain words.</span></div>
+            <textarea class="textarea" rows="3" [(ngModel)]="d.guardrails.customRules" placeholder="e.g. Never do the calculation for them, but explain what profit margin means if asked."></textarea>
+          </div>
+        </section>
+
+        <div class="save-bar">
+          @if (problems().length) {
+            <span class="muted small">⚠️ {{ problems()[0] }}</span>
+          } @else {
+            <span class="small" style="color: var(--good)">✓ Ready to save</span>
+          }
+          <span class="spacer"></span>
+          <button class="btn primary" (click)="save()" [disabled]="saving()">
+            @if (saving()) { <span class="spinner"></span> } {{ isEdit ? 'Save changes' : 'Create assessment' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- ============ PREVIEW ============ -->
+      <aside class="preview-col">
+        <div class="preview">
+          <div class="pv-top">
+            <span class="dots"><i></i><i></i><i></i></span>
+            <span>👀 What the candidate sees</span>
+          </div>
+          <div class="pv-body">
+            <div class="row wrap">
+              <span class="chip accent">{{ d.role || 'Role' }}</span>
+              <span class="chip">⏱ {{ d.timeLimitMinutes || 0 }} min</span>
+            </div>
+            <h2 class="pv-title">{{ d.title || 'Untitled assessment' }}</h2>
+            @if (d.summary) { <p class="muted">{{ d.summary }}</p> }
+
+            <div class="tabs">
+              <button [class.on]="previewTab() === 'brief'" (click)="previewTab.set('brief')">Brief</button>
+              <button [class.on]="previewTab() === 'ai'" (click)="previewTab.set('ai')">AI helper</button>
+              @for (m of d.materials; track m.id) {
+                <button [class.on]="previewTab() === m.id" (click)="previewTab.set(m.id)">{{ m.name }}</button>
+              }
+            </div>
+            <div class="pv-content">
+              @if (previewTab() === 'brief') {
+                @if (d.problemStatement) {
+                  <div class="md" [innerHTML]="d.problemStatement | md"></div>
+                } @else {
+                  <p class="muted">Your problem statement will render here.</p>
+                }
+              } @else if (previewTab() === 'ai') {
+                <hw-ai-policy [policy]="policy()" />
+              } @else if (previewMaterial(); as pm) {
+                <hw-material-view [material]="pm" />
+              }
+            </div>
+            <div class="pv-note">🔒 Hidden from candidates: answer key, scoring criteria, hint text, blocked phrases, extra instructions.</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  }
+</div>
