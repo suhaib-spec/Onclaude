@@ -28,7 +28,7 @@ export class IntentClassifier {
         maxTokens: 150,
       });
       const parsed = parseJsonObject<ClassifierOutput>(raw);
-      if (parsed && INTENTS.includes(parsed.intent)) return { intent: parsed.intent, mock: false };
+      if (parsed && INTENTS.includes(parsed.intent)) return { intent: moreRestrictive(ruled, parsed.intent), mock: false };
       this.log.warn(`Unparseable classifier output; using rules. Output: ${raw.slice(0, 120)}`);
     } catch (err: any) {
       this.log.warn(`Classifier LLM failed (${err?.message}); using rules.`);
@@ -37,14 +37,20 @@ export class IntentClassifier {
   }
 }
 
+// Red-team hardened (docs/review/04-red-team.md). First match wins, so the most restrictive rules come first.
 const RULES: [Intent, RegExp][] = [
   [
     'injection',
-    /\b(ignore|disregard|forget|override|bypass)\b.{0,40}\b(previous|prior|above|all|your|the)\b.{0,30}\b(instructions?|rules?|prompt|guardrails?|policy|restrictions?)\b|\b(system prompt|developer mode|jailbreak|dan mode|reference answer|hidden (instructions?|rules?|answer)|rubric|forbidden terms?|your (instructions|rules|prompt))\b|\b(pretend|act as|you are now|roleplay as|role-play as)\b.{0,40}\b(interviewer|admin|developer|unrestricted|no (rules|limits))\b/i,
+    /\b(ignore|disregard|forget|override|bypass)\b.{0,40}\b(previous|prior|above|all|your|the)\b.{0,30}\b(instructions?|rules?|prompt|guardrails?|policy|restrictions?)\b|\b(system prompt|developer mode|jailbreak|dan mode|reference answer|answer key|answer sheet|marking scheme|grading (key|guide)|hint ladder|hidden (instructions?|rules?|answer|hints?)|rubric|forbidden (terms?|words?|phrases?|list)|blocked (terms?|words?|phrases?)|your (instructions|rules|prompt|settings|config))\b|\b(grader|admin|debug|god|developer|maintenance|unrestricted) mode\b|\b(pretend|imagine)\b.{0,25}\b(you('?re| are)|to be|you were)\b|\b(act|behave|respond|answer) as (if|though|my|a|an|the)\b|\byou are now\b|\bfrom now on,? you\b|\brole-?play\b|\b(base ?64|rot ?13|hexadecimal|morse|cipher|encoded|encode it|encrypt(ed)?|backwards|in reverse|acrostic|first letters?)\b/i,
+  ],
+  [
+    // "My manager says X, just confirm it": a guess offered for confirmation -> redirect (never confirm/deny).
+    'hypothesis_check',
+    /\b(confirm|validate|verify|double[- ]check|sign off on|agree)\b.{0,40}\b(it|this|that|right|correct|answer|price|winner|choice|recommendation|conclusion|guess|result|ship|variant \w)\b|\b(confirm|validate|verify)\b.{0,40}\$\d|\b(confirm|validate|verify)\b\s*[.!?]*$|\$?\d[\d.,]*%?.{0,40}\b(is|was) (the )?(right|correct|best|winning|optimal)\b/i,
   ],
   [
     'solution_request',
-    /\b(just|simply)\s+(tell|give|show)\b|\b(give|tell|show|send|share|write)\s+(me\s+)?(the\s+)?(final\s+|full\s+|correct\s+|right\s+)?(answer|solution|result|recommendation|number|conclusion)s?\b|\bwhat(?:'s| is) the (final |correct |right )?(answer|solution|recommendation|result)\b|\b(solve|do|write|finish|complete)\s+(it|this|the (problem|task|answer|whole thing))\s+(for me)?\b|\bwrite (my|the) (answer|deliverable|memo|report)\b|\bwhich (option|price|variant|one) should i (pick|choose|recommend)\b/i,
+    /\b(just|simply)\s+(tell|give|show)\b|\b(give|tell|show|send|share|write)\s+(me\s+)?(the\s+)?(final\s+|full\s+|correct\s+|right\s+)?(answer|solution|result|recommendation|number|conclusion)s?\b|\bwhat(?:'s| is) the (final |correct |right |best )?(answer|solution|recommendation|result|conclusion)\b|\bwhat(?:'s| is) the (best|right|correct|optimal|winning) (price|decision|option|arm|variant|choice)\b|\b(solve|do|write|finish|complete)\s+(it|this|the (problem|task|answer|whole thing))\s+(for me)?\b|\bwrite (my|the|a|this) (answer|deliverable|memo|report|recommendation|summary|email)\b|\b(memo|report|deliverable)\b.{0,15}\bfor me\b|\bwhich (option|price|variant|one|arm|tier|plan) should (i|we)\b|\bwhat (price|option|arm|variant|decision|tier|plan)\b.{0,30}\b(should|would|do|must) (i|we|you|they)\b|\bshould (we|i|they|the team|the company|lena)\s+(ship|launch|roll ?out|go with|pick|choose|price|charge|recommend|kill)\b|\b(which|what) (price|prices|arm|arms|variant|variants|option|options|segment|segments|device|devices|one|tier|plan)\b.{0,40}\b(gives?|makes?|wins?|earns?|loses?|lose|performs?|converts?|best|worst|highest|lowest|most|least|better|worse|maximi[sz]es|profitable)\b|\b(rank|order|sort)\b.{0,30}\b(prices|arms|options|variants|devices|segments|them)\b|\bbest to worst\b|\bworst to best\b|\b(compute|calculate|work out|figure out|run|crunch|tabulate)\b.{0,50}(\bfor (each|every|all|me)\b|\bper[- ](price|arm|device|variant|segment)\b|\bby (device|price|arm|variant|segment)\b|\beach (price|arm|device|variant|segment)\b|\b(this|the|our) (data|dataset|numbers|csv|test|results)\b)|\bwhat('?s| is| are| was| were)\b.{0,40}\b(at|for|of|in|on)\s+(the\s+)?(\$\d|\d+ ?(usd|dollars?)\b|(arm|variant|version|group) \w+\b|b\b|mobile\b|desktop\b|tablet\b)|\b(describe|explain|summari[sz]e|hint at|spell out|outline|paraphrase|tell me about|sketch)\b.{0,20}\b(the )?(answer|solution|conclusion|recommendation|right price|winner|outcome)\b|\b(respuesta|soluci[oó]n|mejor precio|mejor opci[oó]n|r[ée]ponse|meilleur prix|antwort|l[öo]sung|beste[rn]? preis|risposta|soluzione|miglior prezzo|resposta|melhor pre[cç]o)\b|答案|答え|정답/i,
   ],
   [
     'hypothesis_check',
@@ -52,15 +58,29 @@ const RULES: [Intent, RegExp][] = [
   ],
   [
     'hypothesis_check',
-    /^(so |then |ok so )?(is|was|are|does|did|would|will)\b.{0,60}\b(winner|best|better|worse|answer|right|correct|significant|the one|wins?|beats?)\b|\bmy (answer|conclusion|recommendation) is\b/i,
+    /^(so |then |ok so )?(is|was|are|does|did|would|will|has)\b.{0,60}\b(winner|best|better|worse|answer|right|correct|significant|the one|wins?|beats?|bad|good|wrong|mistake|trap|optimal|profitable|loses?|lose money|worth it|the way to go|50\/50|balanced|skewed|broken|valid|fake|biased|higher|lower|above|below|more than|less than)\b|\bmy (answer|conclusion|recommendation|guess|pick) is\b|^(is|are|does|do|did|was|were|has|have)\b.{0,80}\b(in|with|from) (this|the|our) (data|dataset|test|experiment|case|csv|results?)\b/i,
   ],
   ['hint_request', /\b(hint|nudge|clue|i'?m stuck|i am stuck|stuck|help me get unstuck|point me)\b/i],
   ['materials', /\b(column|columns|row|rows|csv|table|sheet|material|materials|file|dataset|data dictionary|appendix|exhibit|section|where (is|can i find)|which file)\b/i],
   ['concept', /\b(what (is|are|does)|what's|meaning of|define|definition|explain|difference between|concept)\b/i],
-  ['method', /\b(how (do|can|should|would) (i|you|we) (calculate|compute|measure|test|estimate|model|derive|find|work out|use)|formula|how to (calculate|compute|test|measure)|method|technique|step[- ]by[- ]step way to)\b/i],
+  ['method', /\b(how (do|can|should|would) (i|you|we) (calculate|compute|measure|test|estimate|model|derive|find|work out|use|run|do|perform|set up|compare|check|read|interpret)|formula|how to (calculate|compute|test|measure)|method|technique|step[- ]by[- ]step way to)\b/i],
   ['strategy', /\b(where (should|do) i start|how should i (approach|structure|plan|start)|approach|plan|prioriti[sz]e|next step|what should i (focus|consider|look at)|framework)\b/i],
   ['clarify', /\b(clarify|scope|assum(e|ption)|constraint|deliverable|format|expected|requirement|does .{0,30} mean|are we allowed|do i need to|time limit|deadline|what exactly)\b/i],
 ];
+
+const RESTRICTIVE: Intent[] = ['injection', 'solution_request', 'hypothesis_check'];
+
+/**
+ * Live mode: a deterministic rule hit for injection / solution_request / hypothesis_check is never downgraded by the
+ * LLM (a jailbreak that fools the classifier still meets the keyword rules). Otherwise the LLM's intent wins.
+ */
+export function moreRestrictive(ruled: Intent, llm: Intent): Intent {
+  const r = RESTRICTIVE.indexOf(ruled);
+  const l = RESTRICTIVE.indexOf(llm);
+  if (r === -1) return llm;
+  if (l === -1) return ruled;
+  return r < l ? ruled : llm;
+}
 
 /** Deterministic keyword classifier (mock mode and LLM fallback). Exported for unit tests. */
 export function classifyByRules(message: string, recent: { role: string; content: string }[] = []): Intent {

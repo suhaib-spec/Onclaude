@@ -143,7 +143,7 @@ export class Review implements OnInit, OnDestroy {
     return d === 'answer' ? 'good' : d === 'hint' ? 'warn' : d === 'decline' ? 'bad' : 'info';
   }
   verdictWord(v?: string) {
-    return v === 'strong' ? 'Strong' : v === 'acceptable' ? 'Acceptable' : v === 'weak' ? 'Weak' : '—';
+    return v === 'strong' ? 'Strong' : v === 'acceptable' ? 'Good' : v === 'weak' ? 'Weak' : '—';
   }
 
   /** Plain-English headline, e.g. "Strong · solid answer · used AI well". */
@@ -160,7 +160,7 @@ export class Review implements OnInit, OnDestroy {
       parts.push(u >= 70 ? 'used AI well' : u >= 45 ? 'mixed use of AI' : 'leaned on AI too much');
     }
     const flags = s?.integrityFlags ?? 0;
-    if (flags > 0) parts.push(`${flags} integrity event${flags === 1 ? '' : 's'}`);
+    if (flags > 0) parts.push(`tried to trick the AI${flags === 1 ? '' : ` ${flags}×`}`);
     else if ((s?.hintsUsed ?? 0) === 0) parts.push('no hints needed');
     return parts;
   });

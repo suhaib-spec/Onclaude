@@ -174,15 +174,20 @@ export function mockTutorReply(input: TutorInput): string {
     case 'help_not_allowed':
       return `The interviewer hasn't enabled that kind of help for this assessment, so I'll leave ${quote} to you. ${offerLine(input)}`;
 
-    case 'hypothesis_redirect':
+    case 'hypothesis_redirect': {
+      // Never echo the guess back, never confirm or deny it: show how to check it instead.
+      const authority = /\b(manager|boss|ceo|cfo|lead|team|someone|they|he|she)\b.{0,30}\b(said|says|told|thinks|decided|wants)\b/i.test(input.message);
+      const gloss = lookupGlossary(input.message);
+      const how = gloss ? ` The method, in general: ${gloss}` : '';
       return pick(
         [
-          `I can't confirm or rule out conclusions, but you can test it yourself: write down what would have to be true for it to hold, then check each of those against the materials. If they hold up, that's your evidence.`,
-          `Nice, you have a hypothesis. Rather than me judging it, try to break it: what number or pattern in the data would prove it wrong? Go and look for exactly that.`,
-          `I'll stay neutral on whether that's right. A good check: recompute it a second way (a different cut of the data, or a quick sanity estimate) and see if both routes agree.`,
+          `I can't confirm or rule out ${authority ? 'an answer, even one that comes from your manager' : 'a guess'}; the reasoning is what's being assessed here. You can check it yourself, though: pick the one metric that answers the question in the brief, compute it the same way for every option (not just the one you suspect), and see where your pick lands. If it holds up, that's your evidence.${how}`,
+          `I'll stay neutral on that one; ${authority ? 'it needs to hold up whoever suggested it' : "it's your call to make"}. A good way to test it: write down what would have to be true for it to hold, then look for the number in the materials that could prove it wrong. If you can't break it, you can defend it.${how}`,
+          `I can't say yes or no to that, but you can settle it yourself: work it out a second way (a different cut of the data, or a quick back-of-the-envelope estimate) and see whether both routes agree, across all the options, not just the one you have in mind.${how}`,
         ],
-        seed,
+        authority ? 0 : seed, // demo script message 2 ('my manager said...') always gets the clearest version
       );
+    }
 
     case 'hint_unlocked':
       return pick(
@@ -200,15 +205,21 @@ export function mockTutorReply(input: TutorInput): string {
     case 'hint_max_level':
       return `You already have the most specific hint I'm allowed to give.${hint ? ` To recap: ${hint}` : ''} From here the reasoning is yours, and you're closer than you think.`;
 
-    case 'solution_declined':
+    case 'solution_declined': {
+      // Decline, then still be useful: if the ask names a concept, teach the general method with made-up numbers.
+      const gloss = lookupGlossary(input.message);
+      if (gloss) {
+        return `I won't work that out on this case's data or tell you what it shows; that analysis is what's being assessed. Here's the method in general, though: ${gloss} Apply it to every option in the materials yourself and the comparison will speak for itself.`;
+      }
       return pick(
         [
-          `I can't give you the answer; that decision is exactly what this assessment is looking at. What I can do is help you set up the comparison so the answer falls out of your own numbers. ${offerLine(input)}`,
-          `That one's yours to call, so I won't give the answer or the final numbers. Want to walk through how you'd structure it instead? ${offerLine(input)}`,
-          `I'll keep the conclusion with you. A good next step: list the options, the one metric that decides between them, and where that metric comes from in the materials.`,
+          `I can't give you the answer or rank the options; that decision is exactly what this assessment is looking at. What I can do is help you set up the comparison so the answer falls out of your own numbers. ${offerLine(input)}`,
+          `That one's yours to call, so I won't give the answer, the final numbers or a draft of the deliverable. Want to walk through how you'd structure it instead? ${offerLine(input)}`,
+          `I'll keep the conclusion with you. A good next step: list the options, the one metric that decides between them, and where that metric comes from in the materials. I'm happy to explain any formula you need along the way.`,
         ],
         seed,
       );
+    }
 
     case 'injection_declined':
       return pick(INJECTION_REPLIES, seed);

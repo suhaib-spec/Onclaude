@@ -271,7 +271,7 @@
             <div class="pv-content">
               @if (previewTab() === 'brief') {
                 @if (d.problemStatement) {
-                  <div class="md" [innerHTML]="d.problemStatement | md"></div>
+                  <div class="md" [innerHTML]="d.problemStatement | md: 'doc'"></div>
                 } @else {
                   <p class="muted">Your problem statement will render here.</p>
                 }

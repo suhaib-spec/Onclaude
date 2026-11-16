@@ -2,7 +2,7 @@
   "title": "Price It Right: The Quillstone Pro Launch",
   "role": "Product Strategy Analyst",
   "domain": "business",
-  "summary": "An AI notes startup must pick its first subscription price. Five price arms, three opinionated execs, one CFO question: which price actually makes money?",
+  "summary": "An AI notes startup must pick its first subscription price. Five prices were tested, three execs disagree, and the CFO asks one question: which price actually makes money?",
   "timeLimitMinutes": 40,
   "problemStatement": "# Price It Right: The Quillstone Pro Launch\n\n**Quillstone** is an AI meeting-notes app: it joins your calls, transcribes them and writes the summary and the\naction items. After 14 months of free beta (60,000 monthly active users) the beta ends on **1 February** and\nleadership must set the monthly price of **Quillstone Pro**. The company is seed-funded with 18 months of runway,\nand every Pro user costs real money: each transcribed minute runs on rented GPUs.\n\n## The experiment\nFor the last 8 weeks the growth team ran a **randomised price test**: 20,000 new trial starts, all from the\nsame paid channels, split evenly into **five test prices** (\"arms\") of 4,000 each ($9, $14, $19, $24 and $29 per month). Each\narm's paying subscribers were then tracked for six months to measure churn.\n\n## The room is split\n- **Rafael (Head of Growth):** \"$9 converted best by a mile. Volume wins — get the users in and upsell later.\"\n- **Ines (VP Sales):** \"$14 gives the most revenue in month one, and it's right next to Notara's $12. Easy.\"\n- **Odette (CFO):** \"I don't care about month one. Which price makes us the **most money over a subscriber's\n  life**, after the costs of serving them and what we pay to acquire them?\"\n\n## Your task\nYou are the **Product Strategy Analyst**. Write a **recommendation memo** (about one page) to the CEO,\nMarguerite Lam, that includes:\n1. **Your recommended monthly price** for Pro (one of the five tested arms).\n2. **The metric you optimised and why**, with the key numbers for each arm (at minimum: contribution margin per\n   subscriber-month, LTV, CAC and the total value each arm creates).\n3. **Why the alternatives** proposed by Growth and Sales are tempting, and whether they hold up.\n4. **Risks and assumptions**, and what you would monitor after launch.\n\n## Materials\n- `price_test_cohorts.csv` — results of the five-arm price test.\n- `unit_economics.md` — Finance's cost sheet and conventions.\n- `competitor_snapshot.md` — what the market charges.\n\n## Your AI assistant\nHintwise AI can answer questions about the brief, explain ideas and methods, help you find your way around the\nmaterials, and give hints that get more specific step by step (each hint costs a few points). It will **not** hand\nyou the answer: your reasoning is what's being assessed.\n",
   "materials": [
@@ -70,11 +70,11 @@
     "hintLadder": [
       {
         "level": 1,
-        "text": "Before computing anything, decide what 'best price' should mean for this business: write down the one objective the CFO is asking about, which inputs from the materials feed it, and then compute that same metric for every arm in the same way."
+        "text": "Before computing anything, decide what 'best price' should mean for this business: write down the one objective the CFO is asking about, which inputs from the materials feed it, and then compute that same metric for every price you tested in the same way."
       },
       {
         "level": 2,
-        "text": "The materials support several competing objectives, and they rank the arms differently: conversion rate (CSV), month-1 revenue (CSV), matching the market (competitor snapshot), and value per cohort after serving and acquisition costs (CSV + cost sheet). List them, note where each comes from, and check whether they agree. Where they disagree, ask which one answers the CFO's question."
+        "text": "The materials support several competing objectives, and they rank the price options differently: conversion rate (CSV), month-1 revenue (CSV), matching the market (competitor snapshot), and value per cohort after serving and acquisition costs (CSV + cost sheet). List them, note where each comes from, and check whether they agree. Where they disagree, ask which one answers the CFO's question."
       },
       {
         "level": 3,
@@ -82,7 +82,7 @@
       },
       {
         "level": 4,
-        "text": "Use the monthly_churn_pct and paid_subscribers columns of price_test_cohorts.csv together with every cost line in unit_economics.md — including payment processing. For each arm: paying subscribers × LTV, minus that arm's acquisition spend. Compare the arms on that single total."
+        "text": "Use the monthly_churn_pct and paid_subscribers columns of price_test_cohorts.csv together with every cost line in unit_economics.md — including payment processing. For each price option: paying subscribers × LTV, minus that price option's acquisition spend. Compare the price options on that single total."
       }
     ],
     "hintBudget": 4,

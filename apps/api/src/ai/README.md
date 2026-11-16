@@ -39,5 +39,10 @@ candidate msg → sanitize → intent classifier → policy engine (pure TS) →
 - Candidate-facing wording is plain English ("Here's a nudge (hint 2 of 4)…"), never "L2", "policy" or "tier".
 - Candidate turns record `meta.mock` so the review shows whether a turn was live or mocked.
 
+- **Red-team hardening** ([`docs/review/04-red-team.md`](../../../../docs/review/04-red-team.md)): keyword rules catch
+  role-play, encodings, binary-search and per-option computation asks; in live mode a rule hit for injection /
+  solution_request / hypothesis_check is never downgraded by the LLM classifier (`moreRestrictive`); the judge also flags
+  generic confirmation phrases ("you're right", "not quite"); solution declines still teach the general method.
+
 ## Related tasks
 T-018

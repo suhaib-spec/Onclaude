@@ -72,7 +72,7 @@ import { MarkdownPipe } from '../../../shared/markdown';
 
           <div class="card brief">
             <h2>Brief</h2>
-            <div class="md brief-md" [innerHTML]="a.problemStatement | md"></div>
+            <div class="md brief-md" [innerHTML]="a.problemStatement | md: 'doc'"></div>
           </div>
         </div>
 
@@ -84,10 +84,11 @@ import { MarkdownPipe } from '../../../shared/markdown';
           @if (!sessions().length) {
             <div class="empty"><div class="big">📭</div><h3>No sessions yet</h3><p>Create an invite link above and share it with a candidate.</p></div>
           } @else {
+            <p class="same-case">Same case. Same AI. Same {{ a.timeLimitMinutes }} minutes.</p>
             <div style="overflow-x: auto">
               <table class="table">
                 <thead>
-                  <tr><th>Candidate</th><th>Status</th><th>Invite</th><th>Hints</th><th>Score</th><th>AI collaboration</th><th>Created</th><th></th></tr>
+                  <tr><th>Candidate</th><th>Status</th><th>Invite</th><th>Hints</th><th>Score</th><th>How they used AI</th><th>Created</th><th></th></tr>
                 </thead>
                 <tbody>
                   @for (s of sessions(); track s.id) {
@@ -126,6 +127,7 @@ import { MarkdownPipe } from '../../../shared/markdown';
     </div>
   `,
   styles: `
+    .same-case { margin: -4px 0 12px; font-size: 15px; font-weight: 700; color: var(--accent, #4f46e5); letter-spacing: -0.01em; }
     .overview { display: grid; grid-template-columns: 1fr 340px; gap: 24px; padding: 28px; margin-bottom: 20px;
       background: radial-gradient(700px 200px at 0% 0%, #f1efff, transparent 70%), var(--surface); }
     .overview h1 { margin: 14px 0 8px; }

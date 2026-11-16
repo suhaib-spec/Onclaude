@@ -33,7 +33,7 @@
           <div><strong>{{ duration() ?? '—' }}</strong><span>minutes</span></div>
           <div><strong>{{ ins()?.stats?.messages ?? d.messages.length }}</strong><span>AI messages</span></div>
           <div><strong>{{ d.session.hintsUsed }}</strong><span>hints taken</span></div>
-          <div [class.alert]="d.session.integrityFlags > 0"><strong>{{ d.session.integrityFlags }}</strong><span>integrity events</span></div>
+          <div [class.alert]="d.session.integrityFlags > 0"><strong>{{ d.session.integrityFlags }}</strong><span>tries to trick the AI</span></div>
         </div>
       </div>
       <div class="hero-right">
@@ -86,10 +86,10 @@
       </section>
 
       <section class="card">
-        <div class="card-head"><h2>🤖 AI collaboration <span class="adv">advisory</span></h2><span class="muted small">How well they worked with the AI</span></div>
+        <div class="card-head"><h2>🤖 How they used AI <span class="adv">advisory</span></h2><span class="muted small">How well they worked with the AI</span></div>
         @if (ins(); as ins) {
           <div class="usage-top">
-            <hw-score-ring [value]="ins.aiUsageScore" [size]="112" caption="Advisory" />
+            <hw-score-ring [value]="ins.aiUsageScore" [size]="112" caption="AI use / 100" />
             <p class="usage-sum">{{ ins.summary }}</p>
           </div>
           <div class="statgrid">
@@ -99,7 +99,7 @@
             <div [class.alert]="ins.stats.solutionRequests > 0"><strong>{{ ins.stats.solutionRequests }}</strong><span>asked for the answer</span></div>
             <div [class.alert]="ins.stats.injectionAttempts > 0"><strong>{{ ins.stats.injectionAttempts }}</strong><span>tried to trick the AI</span></div>
           </div>
-          <p class="advisory">ⓘ AI collaboration is advisory; a human makes the hiring decision.</p>
+          <p class="advisory">ⓘ How they used AI is advisory and not part of the score; a human makes the hiring decision.</p>
           <div class="behaviours">
             @for (b of ins.behaviours; track $index) {
               <div class="beh" [class]="'beh ' + b.polarity">
@@ -142,14 +142,14 @@
           <div class="ans cand">
             <div class="ans-label">🎓 Candidate’s answer</div>
             @if (d.session.answer.trim()) {
-              <div class="md" [innerHTML]="d.session.answer | md"></div>
+              <div class="md" [innerHTML]="d.session.answer | md: 'doc'"></div>
             } @else { <p class="muted">No answer written.</p> }
           </div>
         }
         @if (answerView() !== 'answer') {
           <div class="ans ref">
             <div class="ans-label">🔒 Answer key <span class="muted small">(never shown to the AI helper)</span></div>
-            <div class="md" [innerHTML]="d.assessment.referenceAnswer | md"></div>
+            <div class="md" [innerHTML]="d.assessment.referenceAnswer | md: 'doc'"></div>
           </div>
         }
       </div>
@@ -172,7 +172,7 @@
       <div class="legend">
         <span class="chip good">good use of AI</span>
         <span class="chip warn">hint (costs points)</span>
-        <span class="chip bad">integrity event</span>
+        <span class="chip bad">tried to trick the AI</span>
         <span class="chip shield">🛡 answer checker stepped in</span>
       </div>
 
@@ -221,10 +221,10 @@
               @if (meta?.judge; as j) {
                 @if (j.verdict !== 'pass' && (j.reasons.length || j.deterministicHits.length)) {
                   <div class="judge-box">
-                    <strong>🛡 Why the answer checker stepped in</strong>
+                    <strong>🛡 Caught before the candidate saw it</strong>
                     @if (j.deterministicHits.length) {
                       <div class="row wrap" style="margin: 4px 0">
-                        <span class="small">Blocked phrase:</span>
+                        <span class="small">Held back:</span>
                         @for (h of j.deterministicHits; track $index) { <span class="chip bad mono">{{ h }}</span> }
                       </div>
                     }

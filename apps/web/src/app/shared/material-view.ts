@@ -9,7 +9,7 @@ import { MarkdownPipe, parseCsv } from './markdown';
   template: `
     @switch (material().kind) {
       @case ('markdown') {
-        <div class="md" [innerHTML]="material().content | md"></div>
+        <div class="md" [innerHTML]="material().content | md: 'doc'"></div>
       }
       @case ('csv') {
         <div class="csv-wrap">

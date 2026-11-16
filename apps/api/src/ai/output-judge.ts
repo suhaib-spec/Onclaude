@@ -64,8 +64,21 @@ export function numericLeaks(reply: string, referenceAnswer: string, publicText:
   return [...leaks];
 }
 
+/**
+ * Phrases that confirm or deny a candidate's guess, in any assessment (red-team hardening).
+ * Arithmetic feedback ("your arithmetic checks out") is deliberately not matched.
+ */
+const CONFIRMATION_RE =
+  /\b(you(?:'re| are) (?:absolutely |exactly |completely )?(?:right|correct|spot on|close|getting warm(?:er)?)|that(?:'s| is) (?:exactly )?(?:right|correct|the (?:right|correct) answer)|(?:you(?:'ve| have)|you) (?:got|nailed) it|spot on|bingo|nailed it|not quite|exactly right|on the right track)\b/i;
+
+export function confirmationHits(reply: string): string[] {
+  const m = String(reply ?? '').match(CONFIRMATION_RE);
+  return m ? [m[0]] : [];
+}
+
 export function deterministicCheck(reply: string, ctx: JudgeContext): string[] {
   return [
+    ...confirmationHits(reply).map((p) => `confirms or denies a guess: "${p}"`),
     ...forbiddenTermHits(reply, ctx.forbiddenTerms).map((t) => `forbidden term: "${t}"`),
     ...numericLeaks(reply, ctx.referenceAnswer, ctx.publicText).map((n) => `reference number: ${n}`),
   ];

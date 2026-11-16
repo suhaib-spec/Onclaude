@@ -57,7 +57,7 @@
   border: 1px solid var(--border);
   .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); }
   &.live { background: var(--good-soft); color: var(--good); border-color: #bfeedd; .pulse { background: var(--good); animation: pulse 1.6s infinite; } }
-  &.mock { background: var(--warn-soft); color: var(--warn); border-color: #fde3b4; .pulse { background: var(--warn); } }
+  &.mock { background: #f4f5f7; color: #6b7280; border-color: #e5e7eb; font-weight: 600; .pulse { background: #9ca3af; } }
   &.down { background: var(--bad-soft); color: var(--bad); border-color: #fecdd6; .pulse { background: var(--bad); animation: pulse 1s infinite; } }
 }
 

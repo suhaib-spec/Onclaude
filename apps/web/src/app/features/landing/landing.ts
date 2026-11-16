@@ -1,9 +1,11 @@
-import { Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { ApiService } from '../../core/api.service';
 import { AppState, Role } from '../../core/ui-state';
 
 @Component({
   selector: 'hw-landing',
+  imports: [RouterLink],
   template: `
     <section class="hero">
       <div class="glow g1"></div>
@@ -26,6 +28,14 @@ import { AppState, Role } from '../../core/ui-state';
             <span class="arrow">→</span>
           </button>
         </div>
+        <a class="proof" [routerLink]="proofLink()" (click)="state.setRole('interviewer')">
+          <span class="proof-txt">Same case, same AI:</span>
+          <span class="who"><strong>Priya</strong> <span class="sc good">72</span></span>
+          <span class="vs">vs</span>
+          <span class="who"><strong>Jordan</strong> <span class="sc bad">18</span></span>
+          <span class="see">See both →</span>
+        </a>
+        <p class="for">Built for hiring teams. Candidates practise for free.</p>
       </div>
     </section>
 
@@ -55,7 +65,8 @@ import { AppState, Role } from '../../core/ui-state';
     .g1 { width: 420px; height: 420px; background: #a5b4fc; top: -120px; left: 8%; animation: float 9s ease-in-out infinite; }
     .g2 { width: 380px; height: 380px; background: #f0abfc; top: 40px; right: 6%; animation: float 11s ease-in-out infinite reverse; }
     @keyframes float { 50% { transform: translate(30px, 24px); } }
-    .hero-inner { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; animation: fadeUp .5s ease both; }
+    .hero-inner { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; animation: heroIn .3s ease-out both; }
+    @keyframes heroIn { from { opacity: .6; transform: translateY(6px); } to { opacity: 1; transform: none; } }
     .eyebrow { padding: 6px 14px; font-size: 12.5px; }
     h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.08; letter-spacing: -0.045em; margin: 22px 0 18px; font-weight: 800; }
     .strike { position: relative; font-weight: 700; color: var(--text); white-space: nowrap; }
@@ -73,8 +84,20 @@ import { AppState, Role } from '../../core/ui-state';
     .cta-txt small { opacity: .85; font-size: 13px; margin-top: 2px; }
     .arrow { font-size: 22px; transition: transform .18s; }
     .cta:hover .arrow { transform: translateX(4px); }
+    .proof { display: inline-flex; align-items: center; gap: 10px; margin-top: 30px; padding: 10px 12px 10px 18px; border-radius: 99px;
+      background: var(--surface); border: 1px solid var(--border); box-shadow: var(--sh-2, 0 6px 18px -10px rgba(30,27,75,.25));
+      color: var(--text); text-decoration: none; font-size: 15px; transition: transform .18s, box-shadow .18s; }
+    .proof:hover { transform: translateY(-2px); box-shadow: var(--sh-3); }
+    .proof-txt { color: var(--text-2); }
+    .who { display: inline-flex; align-items: center; gap: 6px; }
+    .sc { font-weight: 800; padding: 2px 9px; border-radius: 99px; font-size: 14px; }
+    .sc.good { background: var(--good-soft); color: var(--good); }
+    .sc.bad { background: var(--bad-soft); color: var(--bad); }
+    .vs { color: var(--text-3); font-size: 13px; }
+    .see { margin-left: 6px; padding: 6px 14px; border-radius: 99px; background: var(--grad); color: #fff; font-weight: 700; font-size: 14px; }
+    .for { margin: 16px auto 0; color: var(--text-3); font-size: 14px; }
     .how { max-width: 1100px; margin: -10px auto 70px; padding: 0 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-    .step { animation: fadeUp .5s ease both; }
+    .step { animation: heroIn .3s ease-out both; }
     .step:nth-child(2) { animation-delay: .08s; } .step:nth-child(3) { animation-delay: .16s; }
     .step .ic { font-size: 26px; width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: var(--grad-soft); margin-bottom: 14px; }
     .step h3 { margin-bottom: 6px; }
@@ -82,9 +105,22 @@ import { AppState, Role } from '../../core/ui-state';
     @media (max-width: 860px) { .how { grid-template-columns: 1fr; } }
   `,
 })
-export class Landing {
-  private state = inject(AppState);
+export class Landing implements OnInit {
+  protected state = inject(AppState);
   private router = inject(Router);
+  private api = inject(ApiService);
+  /** Proof card target: the business (pricing) demo case, where Priya and Jordan's sessions live. */
+  proofLink = signal<string>('/interviewer');
+
+  async ngOnInit() {
+    try {
+      const list = await this.api.listAssessments();
+      const biz = list.find((a) => a.domain === 'business');
+      if (biz) this.proofLink.set(`/interviewer/assessments/${biz.id}`);
+    } catch {
+      /* keep the dashboard fallback */
+    }
+  }
   go(r: Role) {
     this.state.setRole(r);
     this.router.navigateByUrl(r === 'interviewer' ? '/interviewer' : '/candidate');

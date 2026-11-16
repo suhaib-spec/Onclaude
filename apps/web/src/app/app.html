@@ -14,7 +14,7 @@
     [class.live]="state.llmMode() === 'live' && !state.apiDown()"
     [class.mock]="state.llmMode() === 'mock' && !state.apiDown()"
     [class.down]="state.apiDown()"
-    [title]="state.apiDown() ? 'The API at /api is not responding' : state.llmMode() === 'mock' ? 'Demo mode: no AI key set, using the built-in demo helper' : 'Claude is live'"
+    [title]="state.apiDown() ? 'The API at /api is not responding' : state.llmMode() === 'mock' ? 'Running without an API key: scripted AI replies' : 'Live AI: replies come from Claude in real time'"
   >
     <span class="pulse"></span>{{ state.modeLabel() }}
   </span>

@@ -81,10 +81,10 @@ Count two seconds of silence after each wow moment.
 > without trying anything in between."
 > "We don't mark people down for using AI. We show you whether they used it to think faster or to avoid thinking."
 
-**Scroll Priya's transcript to message 6 and open the 🛡 badge.**
+**Scroll Priya's transcript to the AI's 3rd reply (the one with the 🛡 badge) and open it.**
 > "Here our own AI started to say 'good instinct, you're right' and was about to work out the answer for her.
 > Hintwise caught it and rewrote the reply **before Priya ever saw it**. It doesn't just trust the AI. It checks it."
-*(Jordan's message 10 has the same 🛡 badge, if a judge asks for a second example.)*
+*(Jordan's 5th AI reply has the same 🛡 badge, if a judge asks for a second example.)*
 
 **The sale, said slowly:**
 > "Give both of them ChatGPT on a take-home and you get **two identical $24 memos**. With Hintwise you see who could
@@ -143,7 +143,7 @@ These are also kept word for word for mock mode:
 
 ## Backup answers for judge questions
 - *"Can't the AI just work the answer out from the data?"* "It can, and that's why we don't rely on it behaving. A separate
-  checker that knows the answer reads every reply first. Message 6 in Priya's replay is exactly that case."
+  checker that knows the answer reads every reply first. The AI's 3rd reply in Priya's replay is exactly that case."
 - *"Isn't refusing annoying?"* "It answers questions about the case, ideas and methods directly. It only holds back the result."
 - *"Do you penalise using AI?"* "No. We show *how* it was used. Asking for help is fine; we flag attempts to trick the AI."
 - *"Who decides?"* "A person. The score is advice with a reason for every point, and the reviewer can disagree with any line."

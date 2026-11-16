@@ -5,13 +5,17 @@ import DOMPurify from 'dompurify';
 
 marked.setOptions({ gfm: true, breaks: true });
 
-/** Markdown → sanitized HTML (marked + DOMPurify). Usage: <div class="md" [innerHTML]="text | md"></div> */
+/**
+ * Markdown → sanitized HTML (marked + DOMPurify). Usage: <div class="md" [innerHTML]="text | md"></div>
+ * Pass 'doc' (`text | md: 'doc'`) for authored documents (briefs, materials, memos) that are hard-wrapped:
+ * single newlines then join into one paragraph instead of becoming <br> mid-sentence. Chat keeps line breaks.
+ */
 @Pipe({ name: 'md' })
 export class MarkdownPipe implements PipeTransform {
   private sanitizer = inject(DomSanitizer);
 
-  transform(value: string | null | undefined): SafeHtml {
-    const html = marked.parse(value ?? '', { async: false }) as string;
+  transform(value: string | null | undefined, mode: 'chat' | 'doc' = 'chat'): SafeHtml {
+    const html = marked.parse(value ?? '', { async: false, breaks: mode !== 'doc' }) as string;
     const clean = DOMPurify.sanitize(html);
     // DOMPurify already removed scripts/handlers; bypass Angular's second pass so tables etc. keep their markup.
     return this.sanitizer.bypassSecurityTrustHtml(clean);

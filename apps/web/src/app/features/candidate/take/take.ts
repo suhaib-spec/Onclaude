@@ -39,7 +39,8 @@ export class Take implements OnInit, OnDestroy {
   saveState = signal<SaveState>('idle');
   lastSaved = signal<Date | null>(null);
   messages = signal<PublicMessage[]>([]);
-  draft = '';
+  /** Chat composer text. A signal (not a plain field) so clearing it after Send reliably re-renders the textarea (zoneless app). */
+  draft = signal('');
   thinking = signal(false);
   budget = signal<Budget | null>(null);
   confirmOpen = signal(false);
@@ -49,6 +50,7 @@ export class Take implements OnInit, OnDestroy {
   private saveTimer?: ReturnType<typeof setTimeout>;
   private tick?: ReturnType<typeof setInterval>;
   chatEnd = viewChild<ElementRef<HTMLElement>>('chatEnd');
+  composer = viewChild<ElementRef<HTMLTextAreaElement>>('composer');
 
   domainLabel = DOMAIN_LABEL;
   levelInfo = LEVEL_INFO;
@@ -221,9 +223,12 @@ export class Take implements OnInit, OnDestroy {
 
   // ---------- chat ----------
   async send(text?: string) {
-    const msg = (text ?? this.draft).trim();
+    const msg = (text ?? this.draft()).trim();
     if (!msg || this.thinking()) return;
-    this.draft = '';
+    this.draft.set('');
+    // Also clear the DOM directly: if paste+Enter happen before a render, the signal goes ''→''→'' and ngModel won't rewrite.
+    const box = this.composer()?.nativeElement;
+    if (box) box.value = '';
     const temp: PublicMessage = { id: 'tmp-' + Date.now(), role: 'candidate', content: msg, createdAt: new Date().toISOString(), meta: null };
     this.messages.update((m) => [...m, temp]);
     this.scrollChat();
@@ -234,7 +239,7 @@ export class Take implements OnInit, OnDestroy {
       this.applyBudget(r.budget, r.reply);
     } catch (e) {
       this.messages.update((m) => m.filter((x) => x.id !== temp.id));
-      this.draft = msg;
+      this.draft.set(msg);
       this.handleChatError(e);
     } finally {
       this.thinking.set(false);

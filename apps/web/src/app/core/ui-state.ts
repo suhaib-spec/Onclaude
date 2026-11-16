@@ -41,7 +41,7 @@ export class AppState {
   readonly llmMode = signal<'live' | 'mock' | null>(null);
   readonly apiDown = signal(false);
   readonly apiChecked = signal(false);
-  readonly modeLabel = computed(() => (this.apiDown() ? 'API offline' : this.llmMode() === 'live' ? 'LLM: Live' : this.llmMode() === 'mock' ? 'LLM: Mock' : 'LLM: …'));
+  readonly modeLabel = computed(() => (this.apiDown() ? 'API offline' : this.llmMode() === 'live' ? 'Live AI' : this.llmMode() === 'mock' ? 'Demo mode' : 'Connecting…'));
 
   setRole(r: Role) {
     this.role.set(r);

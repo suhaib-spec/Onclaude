@@ -83,7 +83,7 @@
           </div>
           <div class="pane-body">
             @if (leftTab() === 'brief') {
-              <div class="md" [innerHTML]="v.assessment.problemStatement | md"></div>
+              <div class="md" [innerHTML]="v.assessment.problemStatement | md: 'doc'"></div>
             } @else {
               @for (m of v.assessment.materials; track m.id) {
                 @if (m.id === leftTab()) { <hw-material-view [material]="m" /> }
@@ -160,7 +160,7 @@
                 </div>
                 <span class="small"><strong>{{ b.hintBudget - b.hintsUsed }}</strong>/{{ b.hintBudget }} hints left</span>
                 <span class="spacer"></span>
-                <span class="small pts" [class.neg]="b.hintPointsSpent > 0">−{{ b.hintPointsSpent }} pts</span>
+                <span class="small pts" [class.neg]="b.hintPointsSpent > 0">{{ b.hintPointsSpent ? '−' + b.hintPointsSpent + ' pts' : 'no points lost' }}</span>
               </div>
             }
             <button class="btn warn hint-btn" (click)="getHint()" [disabled]="thinking() || !!hintBlockedReason()">
@@ -211,12 +211,14 @@
 
           <div class="composer">
             <textarea
-              [(ngModel)]="draft"
+              #composer
+              [ngModel]="draft()"
+              (ngModelChange)="draft.set($event)"
               (keydown)="onChatKey($event)"
               rows="2"
               placeholder="Ask a question… (Enter to send, Shift+Enter for a new line)"
             ></textarea>
-            <button class="btn primary send" (click)="send()" [disabled]="thinking() || !draft.trim()" title="Send">➤</button>
+            <button class="btn primary send" (click)="send()" [disabled]="thinking() || !draft().trim()" title="Send">➤</button>
           </div>
         </section>
       </div>
@@ -230,7 +232,7 @@
           <div class="confirm-stats">
             <div><strong>{{ wordCount() }}</strong><span>words</span></div>
             <div><strong>{{ budget()?.hintsUsed ?? 0 }}</strong><span>hints used</span></div>
-            <div><strong>−{{ budget()?.hintPointsSpent ?? 0 }}</strong><span>hint points</span></div>
+            <div><strong>{{ (budget()?.hintPointsSpent ?? 0) ? '−' + budget()?.hintPointsSpent : '0' }}</strong><span>points lost to hints</span></div>
           </div>
           @if (wordCount() < 20) {
             <div class="banner warn small" style="margin-top: 12px">Your answer looks very short. Are you sure?</div>
@@ -255,7 +257,8 @@
       <p class="muted">Your answer for <strong>{{ v.assessment.title }}</strong> is with your interviewer. They’ll see your answer and how you worked with the AI helper.</p>
       <div class="confirm-stats">
         <div><strong>{{ budget()?.hintsUsed ?? v.session.hintsUsed }}</strong><span>hints used</span></div>
-        <div><strong>−{{ budget()?.hintPointsSpent ?? v.session.hintPointsSpent }}</strong><span>hint points</span></div>
+        @let lost = budget()?.hintPointsSpent ?? v.session.hintPointsSpent;
+        <div><strong>{{ lost ? '−' + lost : '0' }}</strong><span>points lost to hints</span></div>
         <div><strong>{{ messages().length || '—' }}</strong><span>AI messages</span></div>
       </div>
       <a class="btn" routerLink="/candidate" style="margin-top: 18px">Back to candidate home</a>
