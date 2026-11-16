@@ -116,6 +116,12 @@ export class ApiService {
   finishInterview(id: string) {
     return this.p(this.http.post<InterviewSession>(`${API}/interviews/${id}/finish`, {}));
   }
+  voiceStart(id: string) {
+    return this.p(this.http.post<{ accessToken: string; callId: string }>(`${API}/interviews/${id}/voice/start`, {}));
+  }
+  voiceSync(id: string, transcript: { role: string; content: string }[], ended = false) {
+    return this.p(this.http.post<InterviewSession>(`${API}/interviews/${id}/voice/sync`, { transcript, ended }));
+  }
 }
 
 /** Turns any HTTP error into a friendly one-line message. */

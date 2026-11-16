@@ -128,3 +128,11 @@
 .voice-sel { max-width: 210px; margin-right: 8px; background: rgba(255,255,255,.08); color: #e4e6ff; border: 1px solid rgba(255,255,255,.18);
   border-radius: 10px; padding: 6px 10px; font: inherit; font-size: 12.5px; outline: none; cursor: pointer; }
 .voice-sel option { color: #12142b; }
+.call-btn { margin-right: 8px; background: linear-gradient(135deg, #10b981, #34d399); color: #052e1c; border: 0; font-weight: 700; box-shadow: 0 8px 18px -10px rgba(16,185,129,.9); }
+.call-btn:hover { transform: translateY(-1px); }
+.call-btn.end { background: #f43f5e; color: #fff; box-shadow: 0 8px 18px -10px rgba(244,63,94,.9); }
+.call-live { margin-top: 12px; display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-radius: 22px; font-weight: 600; font-size: 15px;
+  background: rgba(16,185,129,.12); border: 1px solid rgba(52,211,153,.4); color: #d1fae5; animation: recGlowGreen 1.8s ease-in-out infinite; }
+.call-live .hint { color: #a7f3d0; font-weight: 500; font-size: 12.5px; }
+.wave.call i { background: #34d399; }
+@keyframes recGlowGreen { 0%,100% { box-shadow: 0 0 0 3px rgba(16,185,129,.16); } 50% { box-shadow: 0 0 0 8px rgba(16,185,129,.06); } }

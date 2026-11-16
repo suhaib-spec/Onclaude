@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { InterviewSession, LiveScore, Recommendation, Turn } from '../../../core/api.models';
 import { ApiService, errorMessage } from '../../../core/api.service';
+import { RetellWebClient } from 'retell-client-js-sdk';
 import { ScoreRing } from '../../../shared/score-ring';
 import { RubricCard } from '../components/rubric-card';
 import { Typewriter } from '../components/typewriter';
@@ -45,6 +46,12 @@ export class LiveStage implements OnInit, OnDestroy {
   typing = signal(false);
   speaking = signal(false);
   readAloud = signal(true);
+  /** Retell voice call state (T-022). */
+  voiceState = signal<'off' | 'connecting' | 'live' | 'ended'>('off');
+  agentTalking = signal(false);
+  private retell: RetellWebClient | null = null;
+  private syncTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastTranscript: { role: string; content: string }[] = [];
   /** The interviewer turn currently being "typed" live, and how much of it is visible. */
   streamId = signal<string | null>(null);
   streamText = signal('');
@@ -235,6 +242,7 @@ export class LiveStage implements OnInit, OnDestroy {
     if (this.streamTimer) clearInterval(this.streamTimer);
     this.micWanted = false;
     this.rec?.stop?.();
+    try { this.retell?.stopCall(); } catch { /* ignore */ }
     this.stopAudio();
   }
 
@@ -534,6 +542,62 @@ export class LiveStage implements OnInit, OnDestroy {
       el.style.height = 'auto';
       el.style.height = Math.min(el.scrollHeight, 180) + 'px';
     });
+  }
+
+  /** Start a real-time voice interview with Ava through Retell. Typed mode stays available as a backup. */
+  async startVoice() {
+    const s = this.s();
+    if (!s || this.voiceState() === 'connecting' || this.voiceState() === 'live') return;
+    this.stopAudio();
+    this.stopMic();
+    this.error.set('');
+    this.voiceState.set('connecting');
+    try {
+      const { accessToken } = await this.api.voiceStart(s.id);
+      const client = new RetellWebClient();
+      this.retell = client;
+      client.on('call_started', () => { this.voiceState.set('live'); this.cdr.markForCheck(); });
+      client.on('agent_start_talking', () => { this.agentTalking.set(true); this.speaking.set(true); });
+      client.on('agent_stop_talking', () => { this.agentTalking.set(false); this.speaking.set(false); });
+      client.on('update', (u: any) => {
+        if (Array.isArray(u?.transcript)) {
+          this.lastTranscript = u.transcript.map((t: any) => ({ role: t.role, content: t.content }));
+          this.scheduleSync(false);
+        }
+      });
+      client.on('call_ended', () => { this.voiceState.set('ended'); this.agentTalking.set(false); this.speaking.set(false); this.scheduleSync(true); });
+      client.on('error', (e: any) => {
+        this.error.set('Voice call problem: ' + (e?.message ?? e) + '. You can keep going by typing.');
+        this.voiceState.set('off');
+        try { client.stopCall(); } catch { /* ignore */ }
+      });
+      await client.startCall({ accessToken });
+    } catch (e) {
+      this.voiceState.set('off');
+      this.error.set(errorMessage(e, 'Could not start the voice interview. You can still type your answers.'));
+    }
+  }
+
+  endVoice() {
+    try { this.retell?.stopCall(); } catch { /* ignore */ }
+  }
+
+  private scheduleSync(ended: boolean) {
+    if (this.syncTimer) clearTimeout(this.syncTimer);
+    const run = async () => {
+      const s = this.s();
+      if (!s) return;
+      try {
+        const next = await this.api.voiceSync(s.id, this.lastTranscript, ended);
+        this.s.set(next);
+        this.shownCount.set(next.transcript.length);
+        this.scrollSoon();
+      } catch (e) {
+        this.error.set(errorMessage(e, 'Could not update the live scorecard.'));
+      }
+    };
+    if (ended) void run();
+    else this.syncTimer = setTimeout(run, 700);
   }
 
   compName(id?: string) {

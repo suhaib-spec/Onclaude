@@ -185,6 +185,81 @@ export class InterviewsService {
 
   // -------------------------------------------------------------------------------------------------------------------
 
+  // -------------------------------------------------------------------------------------------------------------------
+  // Voice interviews via Retell (T-022). Retell's agent runs the spoken conversation; we mirror its live transcript,
+  // work out which of our questions Ava is on, and score every candidate turn against that skill.
+  // -------------------------------------------------------------------------------------------------------------------
+
+  /** Create a Retell web call for this interview. The secret API key never leaves the server. */
+  async voiceStart(id: string): Promise<{ accessToken: string; callId: string }> {
+    const s = await this.get(id);
+    const key = (process.env.RETELL_API_KEY || '').trim();
+    const agentId = (process.env.RETELL_AGENT_ID || '').trim();
+    if (!key || !agentId) throw new BadRequestException('Voice interviews need RETELL_API_KEY and RETELL_AGENT_ID in .env.');
+    const r = await fetch('https://api.retellai.com/v2/create-web-call', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        agent_id: agentId,
+        metadata: { interviewId: s.id },
+        retell_llm_dynamic_variables: { candidate_name: firstNameOf(s.candidateName), job_title: s.jobTitle, company: s.company },
+      }),
+    });
+    const body: any = await r.json().catch(() => ({}));
+    if (!r.ok || !body?.access_token) {
+      this.log.warn(`Retell create-web-call failed: ${r.status} ${JSON.stringify(body).slice(0, 300)}`);
+      throw new BadRequestException(`Could not start the voice call (${r.status}): ${body?.message ?? 'unknown error'}`);
+    }
+    return { accessToken: body.access_token, callId: body.call_id };
+  }
+
+  /** Rebuild the interview transcript from Retell's live transcript and rescore. Safe to call repeatedly. */
+  async voiceSync(id: string, items: { role: string; content: string }[], ended: boolean): Promise<InterviewSession> {
+    const s = await this.get(id);
+    const clean = (Array.isArray(items) ? items : [])
+      .map((t) => ({ role: t?.role === 'agent' ? 'agent' : t?.role === 'user' ? 'user' : '', content: String(t?.content ?? '').trim() }))
+      .filter((t) => t.role && t.content);
+    const qWords = s.questions.map((q) => wordSet(q.text));
+    let idx = 0;
+    let started = false;
+    const out: Turn[] = [];
+    clean.forEach((t, i) => {
+      if (t.role === 'agent') {
+        // Which of our questions is Ava asking? Best word overlap with the question text.
+        const w = wordSet(t.content);
+        let best = -1, bestScore = 0;
+        qWords.forEach((qw, k) => {
+          let hit = 0;
+          qw.forEach((x) => { if (w.has(x)) hit++; });
+          const score = hit / Math.max(1, qw.size);
+          if (score > bestScore) { bestScore = score; best = k; }
+        });
+        let kind: Turn['kind'] = 'ack';
+        if (bestScore >= 0.45 && best >= 0) { idx = best; started = true; kind = 'question'; }
+        else if (!started) kind = 'greeting';
+        else if (/that's all my questions|thanks, this was/i.test(t.content)) kind = 'closing';
+        else if (t.content.includes('?')) kind = 'follow_up';
+        out.push({ id: `v-${i}`, role: 'interviewer', kind, text: t.content, at: this.now(), competencyId: s.questions[idx]?.competencyId, questionIndex: idx });
+      } else {
+        if (!started) return; // small talk before question 1 ("ready?") is not scored
+        const q = s.questions[idx];
+        const c = s.competencies.find((x) => x.id === q?.competencyId) ?? s.competencies[idx];
+        const live = mockScore(t.content, c);
+        live.evidence = pickEvidence(t.content, c.keywords);
+        out.push({ id: `v-${i}`, role: 'candidate', kind: 'answer', text: t.content, at: this.now(), competencyId: c.id, questionIndex: idx, liveScore: live });
+      }
+    });
+    s.transcript = out;
+    s.currentIndex = idx;
+    s.scores = this.rollUp(s);
+    if (ended && s.status !== 'completed') {
+      s.status = 'completed';
+      s.completedAt = new Date(this.now());
+      s.scorecard = await this.scorecard(s, false);
+    }
+    return this.repo.save(s);
+  }
+
   private now(): string {
     return (this.clock ? this.clock() : new Date()).toISOString();
   }
@@ -320,4 +395,12 @@ export class InterviewsService {
       return mock;
     }
   }
+}
+
+function wordSet(text: string): Set<string> {
+  const stop = new Set(['the', 'a', 'an', 'and', 'or', 'to', 'of', 'you', 'your', 'how', 'what', 'did', 'it', 'on', 'in', 'for', 'about', 'me', 'time', 'that', 'with', 'one', 'our', 'would', 'and']);
+  return new Set(text.toLowerCase().replace(/[^a-z0-9% ]+/g, ' ').split(/\s+/).filter((w) => w.length > 2 && !stop.has(w)));
+}
+function firstNameOf(name: string): string {
+  return (name || 'there').trim().split(/\s+/)[0];
 }

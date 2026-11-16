@@ -40,7 +40,14 @@
             </span>
           </div>
           <span class="spacer"></span>
-          @if (ttsSupported) {
+          @if (!done()) {
+            @if (voiceState() === 'live' || voiceState() === 'connecting') {
+              <button class="btn sm call-btn end" (click)="endVoice()">{{ voiceState() === 'connecting' ? 'Connecting…' : '■ End call' }}</button>
+            } @else {
+              <button class="btn sm call-btn" (click)="startVoice()" title="Talk to Ava in real time">🎙 Start voice interview</button>
+            }
+          }
+          @if (ttsSupported && voiceState() !== 'live') {
             <select class="voice-sel" [value]="voiceName()" (change)="setVoice($any($event.target).value)" title="Ava's voice">
               @for (n of neuralVoices; track n.id) { <option [value]="n.id">★ {{ n.label }}</option> }
               @for (v of voices(); track v.name) {
@@ -90,7 +97,13 @@
           }
         </div>
 
-        @if (done()) {
+        @if (voiceState() === 'live') {
+          <div class="call-live">
+            <span class="wave call"><i></i><i></i><i></i><i></i><i></i></span>
+            <span>{{ agentTalking() ? 'Ava is speaking…' : 'Your turn: just talk. Ava is listening.' }}</span>
+            <span class="spacer"></span><span class="hint">Live voice call</span>
+          </div>
+        } @else if (done()) {
           <div class="finished">🎉 That’s the interview. Thanks, {{ sess.candidateName }}!</div>
         } @else {
           @if (micError()) { <div class="mic-err">🎙 {{ micError() }}</div> }

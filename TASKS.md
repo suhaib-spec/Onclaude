@@ -34,14 +34,14 @@ and what was done. Rules for using it are in [AGENTS.md](./AGENTS.md) §3–4.
 | T-019 | Run locally without PostgreSQL: built-in database fallback | MVP | Done | 2026-11-16 | 2026-11-16 |
 | T-020 | PowerPoint deck, Word presenter script, and UI polish | MVP | Done | 2026-11-16 | 2026-11-16 |
 | T-021 | Live AI Interview: JD-grounded interviewer, live rubric scores and one-line CTA | MVP | Done | 2026-11-16 | 2026-11-16 |
-| T-022 | Human-like voice via Retell AI | — | Proposed | 2026-11-16 | — |
+| T-022 | Human-like voice via Retell AI | MVP | Done | 2026-11-16 | 2026-11-16 |
 
 ---
 
 ## Active tasks
 
 ### T-022 — Human-like voice via Retell AI
-- **Status:** Proposed (owner will provide the Retell API key and settings)
+- **Status:** Done
 - **Requested:** 2026-11-16 by Suhaib: "Set up Retell AI's thing. I'll give you the API key and all the other stuff required",
   after asking for very human-like text-to-speech for Ava.
 - **Conflict check:** Extends T-021 (voice). Note: a free neural-voice endpoint (`/api/tts`, msedge-tts) was added in T-021
@@ -51,6 +51,15 @@ and what was done. Rules for using it are in [AGENTS.md](./AGENTS.md) §3–4.
   use an existing agent ID; voice choice; whether Retell's own LLM runs the interview (prompted with our JD questions,
   scoring after/along the transcript) or our backend runs it as a custom LLM (needs a public URL/tunnel, since Retell
   must reach our server).
+- **Answers:** Owner provided the Retell API key (stored only in the local `.env`, never committed) and asked me to set
+  it up; voice `retell-Cimo` (owner's choice). Created a Retell LLM + agent "Ava – Hintwise Interviewer"
+  (`agent_302d709b29d6c0ab2c1c70499b`) with the interview prompt; Retell's own LLM runs the call (no public URL needed).
+- **Files changed:** `apps/api/src/interviews/interviews.{service,controller}.ts` (`POST /interviews/:id/voice/start`
+  creates a Retell web call server-side; `POST /interviews/:id/voice/sync` mirrors Retell's live transcript, detects
+  which question Ava is on, scores candidate turns, and builds the scorecard when the call ends), `apps/web` (Retell web
+  SDK, "Start voice interview" button and live-call state in the stage view, `api.service.ts`), `.env.example`.
+- **Verification:** API and web builds pass; simulated Retell transcript → questions detected, answers scored per
+  skill, scorecard on end. Live call to be tested by the owner on their PC.
 
 
 ---

@@ -32,6 +32,18 @@ export class InterviewsController {
     return this.service.answer(id, body?.text ?? '');
   }
 
+  @Post(':id/voice/start')
+  @HttpCode(200)
+  voiceStart(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.voiceStart(id);
+  }
+
+  @Post(':id/voice/sync')
+  @HttpCode(200)
+  voiceSync(@Param('id', ParseUUIDPipe) id: string, @Body() body: { transcript?: { role: string; content: string }[]; ended?: boolean }) {
+    return this.service.voiceSync(id, body?.transcript ?? [], !!body?.ended);
+  }
+
   @Post(':id/finish')
   @HttpCode(200)
   finish(@Param('id', ParseUUIDPipe) id: string) {
