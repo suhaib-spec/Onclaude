@@ -28,6 +28,9 @@ npm --prefix apps/api test                                      # unit tests (po
 | `nest-cli.json`, `tsconfig*.json` | Build config (`dist/` output, spec files excluded) |
 
 ## Key decisions
+- **Built-in database fallback (T-019):** `src/config/embedded-db.ts` starts PGlite (with `uuid-ossp`) behind a local
+  pglite-socket server when no Postgres answers at `DATABASE_URL` (`DB_MODE=auto`), or always with `DB_MODE=embedded`.
+  Data lives in `<repo>/.data/pglite`. `DB_MODE=postgres` disables the fallback.
 - **NestJS 11 + TypeORM 0.3 + TypeScript 5.9** (not the newest majors): NestJS 12 is ESM-only and TypeScript 7 breaks
   `ts-jest`/Nest CLI; the CommonJS 11.x line is the stable, proven choice for a time-boxed MVP.
 - No auth (demo role switch in the UI); `synchronize: true` (MVP only).

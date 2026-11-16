@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { config, loadEnv } from './config/env';
+import { canReach, dbMode, startEmbeddedDb } from './config/embedded-db';
 import { ensureDatabase } from './config/ensure-database';
 
 async function bootstrap() {
@@ -10,7 +11,18 @@ async function bootstrap() {
   const envFiles = loadEnv(); // must run before AppModule reads config
   log.log(envFiles.length ? `Loaded env from ${envFiles.join(', ')}` : 'No .env found; using defaults (copy .env.example to .env at the repo root).');
 
-  await ensureDatabase(config.databaseUrl, (m) => log.log(m));
+  const mode = dbMode();
+  const usePostgres = mode === 'postgres' || (mode === 'auto' && (await canReach(config.databaseUrl)));
+  if (usePostgres) {
+    await ensureDatabase(config.databaseUrl, (m) => log.log(m));
+  } else {
+    log.log(
+      mode === 'embedded'
+        ? 'DB_MODE=embedded: starting the built-in database.'
+        : 'No PostgreSQL server reachable at DATABASE_URL: starting the built-in database instead.',
+    );
+    process.env.DATABASE_URL = await startEmbeddedDb((m) => log.log(m));
+  }
 
   const { AppModule } = await import('./app.module');
   const { SeederService } = await import('./demo-data/seeder.service');

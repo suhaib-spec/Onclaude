@@ -7,12 +7,13 @@ interviewer sees the answer, an AI evaluation against the rubric, and a report o
 > 🤖 **AI agents:** read [AGENTS.md](./AGENTS.md) before doing anything.
 
 ## Run it locally (Windows, macOS or Linux)
-Requirements: **Node 20+** and a running **PostgreSQL** (the database is created automatically).
+Requirements: **Node 22.22+ or 24.15+** (the Angular CLI refuses older versions). **PostgreSQL is optional**: if no Postgres
+server answers at `DATABASE_URL`, the API starts a built-in Postgres-compatible database (PGlite) and stores data in `.data/`.
 
 ```bash
 npm run setup                 # installs root, api and web dependencies
 copy .env.example .env        # Windows (macOS/Linux: cp .env.example .env)
-# edit .env: set DATABASE_URL to your Postgres user/password, and ANTHROPIC_API_KEY (leave it empty for mock mode)
+# edit .env: ANTHROPIC_API_KEY (leave empty for Demo mode); DATABASE_URL only if you use your own Postgres
 npm run dev                   # API on http://localhost:3000, web app on http://localhost:4200
 ```
 Open **http://localhost:4200**. Demo links: `/take/PRICING1` (pricing case) and `/take/ABTEST01` (A/B-test case).

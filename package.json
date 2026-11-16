@@ -5,7 +5,7 @@
   "description": "Hintwise: AI that helps you think, not copy. Root scripts only (apps install independently).",
   "scripts": {
     "setup": "npm install && npm --prefix apps/api install && npm --prefix apps/web install",
-    "dev": "concurrently -k -n api,web -c blue,magenta \"npm --prefix apps/api run start:dev\" \"npm --prefix apps/web start\"",
+    "dev": "concurrently -k -n api,web -c blue,magenta \"npm --prefix apps/api run build && npm --prefix apps/api start\" \"npm --prefix apps/web start\"",
     "dev:api": "npm --prefix apps/api run start:dev",
     "dev:web": "npm --prefix apps/web start",
     "build": "npm --prefix apps/api run build && npm --prefix apps/web run build"

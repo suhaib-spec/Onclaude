@@ -31,6 +31,7 @@ and what was done. Rules for using it are in [AGENTS.md](./AGENTS.md) §3–4.
 | T-016 | Skill tracking & recommender | 4 | Approved | — | — |
 | T-017 | Deployment, cost guardrails & ops | 5 | Approved | — | — |
 | T-018 | MVP: interviewer-built assessments with a gated AI assistant + 2 demo use cases | MVP | Done | 2026-11-16 | 2026-11-16 |
+| T-019 | Run locally without PostgreSQL: built-in database fallback | MVP | Done | 2026-11-16 | 2026-11-16 |
 
 ---
 
@@ -124,6 +125,21 @@ _None._
 ---
 
 ## Completed tasks
+
+### T-019 — Run locally without PostgreSQL: built-in database fallback
+- **Status:** Done
+- **Requested:** 2026-11-16 by Suhaib ("I haven't set up anything for Postgres, can you build and set it up")
+- **Request:** Make the MVP run on the owner's Windows PC, which has no PostgreSQL installed.
+- **Conflict check:** T-018 chose "Node + my own PostgreSQL". This keeps Postgres as the primary option and adds a
+  fallback only when no server answers, so there is no conflict; the owner asked for it directly.
+- **Questions & answers:** Postgres not installed → owner chose to have it built and set up.
+- **Files changed:** `apps/api/src/config/embedded-db.ts` (new), `apps/api/src/main.ts`, `apps/api/package.json`
+  (+ `@electric-sql/pglite`, `@electric-sql/pglite-socket`), `package.json` (`dev` builds then starts the API: the
+  `nest --watch` runner stalled on Windows), `.env.example` (`DB_MODE`), `.gitignore` (`.data`), READMEs.
+- **Verification:** API tests and build pass; with `DB_MODE=embedded` the API seeds 2 assessments + 3 sessions and the
+  demo chat flow works.
+- **Summary:** `DB_MODE=auto` (default) uses Postgres when reachable, otherwise starts PGlite (with `uuid-ossp`) behind
+  pglite-socket on 127.0.0.1:54329, with data in `.data/pglite`. Also noted that the web app needs Node 22.22+ or 24.15+.
 
 ### T-018 — MVP: interviewer-built assessments with a gated AI assistant + 2 demo use cases
 - **Status:** Done
